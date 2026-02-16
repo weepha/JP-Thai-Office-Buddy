@@ -143,5 +143,68 @@ def search_glossary():
     except Exception as e:
         return jsonify({"error": str(e)})
 
+import base64
+
+@app.route('/vision_ocr', methods=['POST'])
+def vision_ocr():
+    try:
+        if 'image' not in request.files:
+            return jsonify({"error": "ไม่พบไฟล์รูปภาพ"})
+        
+        image_file = request.files['image']
+        if image_file.filename == '':
+            return jsonify({"error": "ไม่ได้เลือกรูปภาพ"})
+
+        # Read and encode image to base64
+        image_data = image_file.read()
+        base64_image = base64.b64encode(image_data).decode('utf-8')
+        mime_type = image_file.mimetype # e.g., 'image/jpeg'
+
+        # Use gemini-flash-latest (supports vision)
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={API_KEY}"
+        
+        prompt_text = """
+        ดูรูปภาพนี้แล้ว:
+        1. ถอดข้อความภาษาญี่ปุ่นที่อยู่ในภาพออกมา (OCR)
+        2. แปลข้อความเป็นภาษาไทย
+        3. ถ้าเป็นเอกสารธุรกิจ ให้สรุปใจความสำคัญสั้นๆ
+        
+        ตอบกลับมาเป็น JSON ดังนี้ (ไม่ต้องมี markdown):
+        {
+            "original_text": "ข้อความภาษาญี่ปุ่นที่ถอดได้",
+            "translated_text": "คำแปลภาษาไทย",
+            "summary": "สรุปใจความสำคัญ (ถ้ามี)"
+        }
+        """
+
+        payload = {
+            "contents": [{
+                "parts": [
+                    {"text": prompt_text},
+                    {
+                        "inline_data": {
+                            "mime_type": mime_type,
+                            "data": base64_image
+                        }
+                    }
+                ]
+            }]
+        }
+        headers = {'Content-Type': 'application/json'}
+
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
+        
+        if response.status_code == 200:
+            data = response.json()
+            ai_text = data['candidates'][0]['content']['parts'][0]['text']
+            clean_json = ai_text.replace('```json', '').replace('```', '').strip()
+            result = json.loads(clean_json)
+            return jsonify(result)
+        else:
+            return jsonify({"error": f"Google API Error: {response.text}"})
+
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
 if __name__ == '__main__':
     app.run(debug=True)

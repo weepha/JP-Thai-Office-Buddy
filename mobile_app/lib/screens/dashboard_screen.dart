@@ -79,6 +79,8 @@ class DashboardScreen extends StatelessWidget {
                            Navigator.pushNamed(context, feature['route']);
                          } else if (feature['route'] == '/glossary') {
                            Navigator.pushNamed(context, feature['route']);
+                         } else if (feature['route'] == '/vision') {
+                           Navigator.pushNamed(context, feature['route']);
                          } else {
                            ScaffoldMessenger.of(context).showSnackBar(
                              SnackBar(content: Text('กำลังไปที่: ${feature['title']}')),
