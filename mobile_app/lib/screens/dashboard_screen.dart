@@ -73,19 +73,7 @@ class DashboardScreen extends StatelessWidget {
                     child: InkWell(
                       borderRadius: BorderRadius.circular(16),
                       onTap: () {
-                         if (feature['route'] == '/doc_assistant') {
-                           Navigator.pushNamed(context, feature['route']);
-                         } else if (feature['route'] == '/translator') {
-                           Navigator.pushNamed(context, feature['route']);
-                         } else if (feature['route'] == '/glossary') {
-                           Navigator.pushNamed(context, feature['route']);
-                         } else if (feature['route'] == '/vision') {
-                           Navigator.pushNamed(context, feature['route']);
-                         } else {
-                           ScaffoldMessenger.of(context).showSnackBar(
-                             SnackBar(content: Text('กำลังไปที่: ${feature['title']}')),
-                           );
-                         }
+                         Navigator.pushNamed(context, feature['route']);
                       },
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,

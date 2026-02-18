@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../services/api_config.dart';
 
 class GlossaryScreen extends StatefulWidget {
   const GlossaryScreen({super.key});
@@ -25,9 +26,9 @@ class _GlossaryScreenState extends State<GlossaryScreen> {
     });
 
     try {
-      // For Chrome/Web use localhost (127.0.0.1)
-      final url = Uri.parse('http://127.0.0.1:5000/search_glossary');
-      
+      // Use centralized API Config
+      final url = Uri.parse('${ApiConfig.baseUrl}/search_glossary');
+
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -83,8 +84,15 @@ class _GlossaryScreenState extends State<GlossaryScreen> {
             const SizedBox(height: 16),
             ElevatedButton.icon(
               onPressed: _isLoading ? null : _search,
-              icon: _isLoading 
-                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+              icon: _isLoading
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
+                    )
                   : const Icon(Icons.search),
               label: const Text('ค้นหา (Search)'),
               style: ElevatedButton.styleFrom(
@@ -98,12 +106,17 @@ class _GlossaryScreenState extends State<GlossaryScreen> {
               Container(
                 padding: const EdgeInsets.all(12),
                 color: Colors.red[50],
-                child: Text('Error: $_error', style: const TextStyle(color: Colors.red)),
+                child: Text(
+                  'Error: $_error',
+                  style: const TextStyle(color: Colors.red),
+                ),
               ),
             if (_result != null)
               Card(
                 elevation: 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
@@ -111,11 +124,44 @@ class _GlossaryScreenState extends State<GlossaryScreen> {
                     children: [
                       Text(
                         _result!['term_jp'] ?? '-',
-                        style: const TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: Colors.teal),
+                        style: const TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.teal,
+                        ),
                       ),
+                      if (_result!['politeness_level'] != null)
+                        Container(
+                          margin: const EdgeInsets.only(top: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.teal.shade50,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.teal),
+                          ),
+                          child: Text(
+                            _result!['politeness_level']!,
+                            style: const TextStyle(
+                              color: Colors.teal,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
                       const Divider(),
-                      const Text('ความหมาย:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
-                      Text(_result!['definition'] ?? '-', style: const TextStyle(fontSize: 16)),
+                      const Text(
+                        'ความหมาย:',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 18,
+                        ),
+                      ),
+                      Text(
+                        _result!['definition'] ?? '-',
+                        style: const TextStyle(fontSize: 16),
+                      ),
                       const SizedBox(height: 16),
                       Container(
                         padding: const EdgeInsets.all(12),
@@ -127,11 +173,23 @@ class _GlossaryScreenState extends State<GlossaryScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text('ตัวอย่างประโยค:', style: TextStyle(fontWeight: FontWeight.bold)),
+                            const Text(
+                              'ตัวอย่างประโยค:',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
                             const SizedBox(height: 4),
-                            Text(_result!['example_jp'] ?? '-', style: const TextStyle(fontSize: 16, fontStyle: FontStyle.italic)),
+                            Text(
+                              _result!['example_jp'] ?? '-',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
                             const SizedBox(height: 4),
-                            Text(_result!['example_th'] ?? '-', style: const TextStyle(color: Colors.grey)),
+                            Text(
+                              _result!['example_th'] ?? '-',
+                              style: const TextStyle(color: Colors.grey),
+                            ),
                           ],
                         ),
                       ),

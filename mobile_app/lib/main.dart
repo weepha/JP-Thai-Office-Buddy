@@ -4,6 +4,7 @@ import 'screens/doc_assistant_screen.dart';
 import 'screens/translator_screen.dart';
 import 'screens/glossary_screen.dart';
 import 'screens/vision_screen.dart';
+import 'screens/politeness_check_screen.dart';
 
 void main() {
   runApp(const MyApp());
@@ -27,7 +28,7 @@ class MyApp extends StatelessWidget {
         '/doc_assistant': (context) => const DocAssistantScreen(),
         '/glossary': (context) => const GlossaryScreen(),
         '/vision': (context) => const VisionScreen(),
-        // '/politeness': (context) => const PolitenessScreen(),
+        '/politeness': (context) => const PolitenessCheckScreen(),
       },
     );
   }

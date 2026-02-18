@@ -7,7 +7,7 @@ app = Flask(__name__)
 CORS(app)
 
 # --- ใส่ API Key ของคุณตรงนี้ ---
-API_KEY = "AIzaSyCZS5RI77o86YsdvmoX_mm835hfSlz2PCc"
+API_KEY = "AIzaSyDJ1y-GvV_Uf2mMQvPuYFOx_h1Un-svGAc"
 
 @app.route('/')
 def home():
@@ -75,6 +75,9 @@ def generate_doc():
         - ระดับภาษา: {tone}
         - ผู้รับสาร: {recipient}
         
+        ข้อแนะนำเพิ่มเติม:
+        - หากเป็น 'nippou' (รายงานประจำวัน) ให้ใช้ฟอร์แมตมาตรฐาน Nippou (業務内容, 所感, 明日の予定 ฯลฯ)
+        
         ตอบกลับมาเฉพาะเนื้อหาเอกสารภาษาญี่ปุ่นที่สมบูรณ์เท่านั้น (ไม่ต้องมีคำอธิบายเพิ่มเติม)
         """
 
@@ -110,15 +113,63 @@ def search_glossary():
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={API_KEY}"
         
         prompt_text = f"""
-        คุณคือพจนานุกรมศัพท์ธุรกิจญี่ปุ่น-ไทย
+        คุณคือพจนานุกรมศัพท์ธุรกิจธุรกิจญี่ปุ่น-ไทย
         จงอธิบายคำศัพท์: "{term}"
         
         ตอบกลับมาเป็น JSON ดังนี้ (ไม่ต้องมี markdown):
         {{
             "term_jp": "คำศัพท์ภาษาญี่ปุ่น (Kanji/Kana)",
             "definition": "ความหมายและการใช้งานในบริบททำงาน",
+            "politeness_level": "ระดับความสุภาพ (Normal/Polite/Honorific)",
             "example_jp": "ประโยคตัวอย่างภาษาญี่ปุ่น",
             "example_th": "คำแปลประโยคตัวอย่าง"
+        }}
+        """
+
+        payload = {
+            "contents": [{
+                "parts": [{"text": prompt_text}]
+            }]
+        }
+        headers = {'Content-Type': 'application/json'}
+
+        response = requests.post(url, headers=headers, data=json.dumps(payload))
+        
+        if response.status_code == 200:
+            data = response.json()
+            ai_text = data['candidates'][0]['content']['parts'][0]['text']
+            clean_json = ai_text.replace('```json', '').replace('```', '').strip()
+            result = json.loads(clean_json)
+            return jsonify(result)
+        else:
+            return jsonify({"error": f"Google API Error: {response.text}"})
+
+    except Exception as e:
+        return jsonify({"error": str(e)})
+
+@app.route('/analyze_politeness', methods=['POST'])
+def analyze_politeness():
+    try:
+        data = request.json
+        text = data.get('text', '')
+        recipient = data.get('recipient', 'ทั่วไป') # e.g., หัวหน้า, ลูกค้า, เพื่อนร่วมงาน
+
+        if not text:
+             return jsonify({"error": "กรุณาระบุข้อความ"})
+
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={API_KEY}"
+        
+        prompt_text = f"""
+        คุณคือผู้เชี่ยวชาญด้านภาษาญี่ปุ่นและระดับความสุภาพ (Keigo)
+        จงวิเคราะห์ประโยคนี้: "{text}"
+        สำหรับผู้รับสารที่เป็น: "{recipient}"
+        
+        ตอบกลับมาเป็น JSON ดังนี้ (ไม่ต้องมี markdown):
+        {{
+            "original_text": "{text}",
+            "analysis": "วิเคราะห์ข้อผิดพลาดหรือจุดที่ควรปรับปรุง",
+            "suggestion": "ประโยคที่แนะนำให้ใช้ (ภาษาญี่ปุ่น)",
+            "explanation": "คำอธิบายว่าทำไมถึงแนะนำแบบนี้"
         }}
         """
 
@@ -158,7 +209,14 @@ def vision_ocr():
         # Read and encode image to base64
         image_data = image_file.read()
         base64_image = base64.b64encode(image_data).decode('utf-8')
-        mime_type = image_file.mimetype # e.g., 'image/jpeg'
+        mime_type = image_file.mimetype 
+
+        # Fix for Flutter sending application/octet-stream
+        if mime_type == 'application/octet-stream':
+            import mimetypes
+            guessed_type, _ = mimetypes.guess_type(image_file.filename)
+            if guessed_type:
+                mime_type = guessed_type
 
         # Use gemini-flash-latest (supports vision)
         url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key={API_KEY}"

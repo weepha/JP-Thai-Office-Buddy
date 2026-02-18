@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../services/api_config.dart';
 
 class DocAssistantScreen extends StatefulWidget {
   const DocAssistantScreen({super.key});
@@ -18,8 +19,17 @@ class _DocAssistantScreenState extends State<DocAssistantScreen> {
   String _result = '';
   bool _isLoading = false;
 
-  final List<String> _docTypes = ['Email', 'Daily Report (Nippou)', 'Meeting Minutes', 'Apology Letter'];
-  final List<String> _tones = ['Business / สุภาพ', 'Polite / ทั่วไป', 'Casual / เป็นกันเอง'];
+  final List<String> _docTypes = [
+    'Email',
+    'Daily Report (Nippou)',
+    'Meeting Minutes',
+    'Apology Letter',
+  ];
+  final List<String> _tones = [
+    'Business / สุภาพ',
+    'Polite / ทั่วไป',
+    'Casual / เป็นกันเอง',
+  ];
 
   Future<void> _generateDoc() async {
     if (!_formKey.currentState!.validate()) return;
@@ -37,9 +47,9 @@ class _DocAssistantScreenState extends State<DocAssistantScreen> {
     if (_tone.contains('Casual')) apiTone = 'casual';
 
     try {
-      // For Android Emulator use 10.0.2.2, for iOS/Web use localhost
-      final url = Uri.parse('http://127.0.0.1:5000/generate_doc'); 
-      
+      // Use centralized API Config
+      final url = Uri.parse('${ApiConfig.baseUrl}/generate_doc');
+
       final response = await http.post(
         url,
         headers: {'Content-Type': 'application/json'},
@@ -90,25 +100,43 @@ class _DocAssistantScreenState extends State<DocAssistantScreen> {
               TextFormField(
                 decoration: const InputDecoration(
                   labelText: 'หัวข้อ / ใจความสำคัญ (ภาษาไทย)',
-                  hintText: 'เช่น ขอลาป่วยเนื่องจากเป็นไข้, สรุปยอดขายประจำเดือน',
+                  hintText:
+                      'เช่น ขอลาป่วยเนื่องจากเป็นไข้, สรุปยอดขายประจำเดือน',
                   border: OutlineInputBorder(),
                 ),
                 maxLines: 2,
-                validator: (value) => value == null || value.isEmpty ? 'กรุณาระบุหัวข้อ' : null,
+                validator: (value) =>
+                    value == null || value.isEmpty ? 'กรุณาระบุหัวข้อ' : null,
                 onSaved: (value) => _topic = value!,
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _docType,
-                decoration: const InputDecoration(labelText: 'ประเภทเอกสาร', border: OutlineInputBorder()),
-                items: _docTypes.map((type) => DropdownMenuItem(value: type, child: Text(type))).toList(),
+                decoration: const InputDecoration(
+                  labelText: 'ประเภทเอกสาร',
+                  border: OutlineInputBorder(),
+                ),
+                items: _docTypes
+                    .map(
+                      (type) =>
+                          DropdownMenuItem(value: type, child: Text(type)),
+                    )
+                    .toList(),
                 onChanged: (value) => setState(() => _docType = value!),
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _tone,
-                decoration: const InputDecoration(labelText: 'ระดับภาษา (Tone)', border: OutlineInputBorder()),
-                items: _tones.map((tone) => DropdownMenuItem(value: tone, child: Text(tone))).toList(),
+                decoration: const InputDecoration(
+                  labelText: 'ระดับภาษา (Tone)',
+                  border: OutlineInputBorder(),
+                ),
+                items: _tones
+                    .map(
+                      (tone) =>
+                          DropdownMenuItem(value: tone, child: Text(tone)),
+                    )
+                    .toList(),
                 onChanged: (value) => setState(() => _tone = value!),
               ),
               const SizedBox(height: 16),
@@ -123,8 +151,20 @@ class _DocAssistantScreenState extends State<DocAssistantScreen> {
               const SizedBox(height: 24),
               ElevatedButton.icon(
                 onPressed: _isLoading ? null : _generateDoc,
-                icon: _isLoading ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Icon(Icons.auto_awesome),
-                label: Text(_isLoading ? 'กำลังร่างเอกสาร...' : 'สร้างเอกสาร (Generate)', style: const TextStyle(fontSize: 18)),
+                icon: _isLoading
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Icon(Icons.auto_awesome),
+                label: Text(
+                  _isLoading ? 'กำลังร่างเอกสาร...' : 'สร้างเอกสาร (Generate)',
+                  style: const TextStyle(fontSize: 18),
+                ),
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 12),
                   backgroundColor: Colors.orangeAccent,
@@ -135,7 +175,10 @@ class _DocAssistantScreenState extends State<DocAssistantScreen> {
                 const SizedBox(height: 24),
                 const Divider(),
                 const SizedBox(height: 8),
-                const Text('ผลลัพธ์ (คัดลอกไปใช้ได้เลย):', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                const Text(
+                  'ผลลัพธ์ (คัดลอกไปใช้ได้เลย):',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
                 const SizedBox(height: 8),
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -144,9 +187,12 @@ class _DocAssistantScreenState extends State<DocAssistantScreen> {
                     border: Border.all(color: Colors.grey[300]!),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: SelectableText(_result, style: const TextStyle(fontSize: 16)),
+                  child: SelectableText(
+                    _result,
+                    style: const TextStyle(fontSize: 16),
+                  ),
                 ),
-              ]
+              ],
             ],
           ),
         ),
