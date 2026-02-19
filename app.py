@@ -7,7 +7,7 @@ app = Flask(__name__)
 CORS(app)
 
 # --- ใส่ API Key ของคุณตรงนี้ ---
-API_KEY = "AIzaSyDJ1y-GvV_Uf2mMQvPuYFOx_h1Un-svGAc"
+API_KEY = "AIzaSyAONfEIOgUHPkvRPqhWs5KnakO-ItrXCuc"
 
 @app.route('/')
 def home():

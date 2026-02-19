@@ -109,6 +109,7 @@ class _TranslatorScreenState extends State<TranslatorScreen> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             TextField(
+              autofocus: true,
               controller: _controller,
               decoration: InputDecoration(
                 labelText: 'พิมพ์ประโยคภาษาไทย',
