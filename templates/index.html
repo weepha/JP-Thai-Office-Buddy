@@ -1,95 +1,745 @@
 <!DOCTYPE html>
 <html lang="th">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>JP-Thai Office Buddy</title>
+    <title>JP-Thai Office Buddy | Smart Assistant</title>
+    
+    <!-- PWA Settings -->
+    <link rel="manifest" href="/static/manifest.json">
+    <link rel="icon" type="image/png" href="/static/logo.png">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="/static/icon-192.png">
+
+    <!-- CSS & Fonts -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            --secondary-gradient: linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%);
+            --glass-bg: rgba(255, 255, 255, 0.85);
+            --glass-border: rgba(255, 255, 255, 0.3);
+        }
+
+        body {
+            background: #f0f2f5;
+            font-family: 'Inter', 'Sarabun', sans-serif;
+            color: #2d3436;
+        }
+
+        .hero-section {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 80px 0 120px;
+            border-bottom-left-radius: 50% 20%;
+            border-bottom-right-radius: 50% 20%;
+            margin-bottom: -60px;
+            box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+        }
+
+        .lang-switcher {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+
+        .main-card {
+            background: var(--glass-bg);
+            backdrop-filter: blur(8px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: var(--card-shadow);
+            padding: 30px;
+            margin-top: 20px;
+        }
+
+        .nav-pills .nav-link {
+            border-radius: 12px;
+            padding: 12px 20px;
+            font-weight: 600;
+            color: #636e72;
+            transition: all 0.3s ease;
+        }
+
+        .nav-pills .nav-link.active {
+            background: var(--primary-gradient);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-gradient {
+            background: var(--primary-gradient);
+            border: none;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 12px;
+            font-weight: 600;
+            transition: transform 0.2s;
+        }
+
+        .btn-gradient:hover {
+            transform: translateY(-2px);
+            color: white;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .result-box {
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 15px;
+            border-left: 5px solid #74b9ff;
+            background: #fff;
+        }
+
+        .loading-spinner {
+            display: none;
+            width: 1rem;
+            height: 1rem;
+        }
+
+        /* Fix for input-group button separation */
+        .input-group .btn-gradient {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+            transform: none !important; /* Prevent jumping within input-group */
+            margin-left: -1px; /* Overlap border to look seamless */
+        }
+        .input-group .form-control {
+            border-top-right-radius: 0;
+            border-bottom-right-radius: 0;
+            border-right: none;
+        }
+
+        .lang-badge-container {
+            display: inline-flex;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.6);
+            padding: 4px 12px;
+            border-radius: 30px;
+            gap: 8px;
+            border: 1px solid rgba(102, 126, 234, 0.15);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            backdrop-filter: blur(4px);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .lang-badge-container:hover {
+            transform: scale(1.02);
+            background: rgba(255, 255, 255, 0.9);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.06);
+        }
+
+        .lang-chip {
+            font-size: 0.85rem;
+            font-weight: 600;
+            padding: 3px 10px;
+            border-radius: 20px;
+            color: #4b4b4b;
+            background: white;
+            border: 1px solid rgba(100, 100, 100, 0.05);
+        }
+
+        .lang-chip.th { border-bottom: 2px solid #667eea; }
+        .lang-chip.jp { border-bottom: 2px solid #764ba2; }
+        .lang-sep { color: #d1d8e0; font-size: 0.8rem; }
+
+        /* Validation Warning */
+        .validate-warning {
+            display: none;
+            font-size: 0.75rem;
+            color: #ff7675;
+            margin-top: 5px;
+            font-weight: 600;
+        }
+
+        .dynamic-field-label {
+            font-weight: 700;
+            font-size: 0.8rem;
+            color: #6c757d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 8px;
+            display: block;
+        }
+
+        .topic-field:focus {
+            background: white !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        }
+    </style>
 </head>
+<body>
 
-<body class="bg-light">
-
-    <div class="container mt-5">
-        <h1 class="text-center mb-4">🇯🇵 JP-Thai Office Buddy</h1>
-
-        <div class="card p-4 shadow-sm">
-            <div class="mb-3">
-                <label for="thaiInput" class="form-label"><b>พิมพ์ประโยคภาษาไทยที่นี่:</b></label>
-                <input type="text" class="form-control" id="thaiInput" placeholder="เช่น ขอโทษครับที่มาสาย">
-            </div>
-            <button onclick="translateText()" class="btn btn-primary w-100">แปลภาษา (Translate)</button>
+    <header class="hero-section text-center">
+        <div class="lang-switcher">
+            <button class="btn btn-outline-light btn-sm fw-bold" onclick="toggleLanguage()" id="langBtn">🇹🇭 ไทย</button>
         </div>
+        <div class="container">
+            <img src="/static/logo.png" alt="Office Buddy Logo" class="mb-4 rounded-circle bg-white p-2 shadow-lg" style="width: 120px; height: 120px; object-fit: contain; border: 4px solid var(--glass-border);">
+            <h1 class="display-4 fw-bold" id="ui-hero-title">JP-Thai Office Buddy</h1>
+            <p class="lead" id="ui-hero-subtitle">ผู้ช่วย AI สำหรับพนักงานในอุตสาหกรรมไม้ญี่ปุ่น</p>
+        </div>
+    </header>
 
-        <div id="resultArea" class="mt-4" style="display:none;">
-            <div class="row">
-                <div class="col-md-4">
-                    <div class="card text-white bg-info mb-3">
-                        <div class="card-header">Casual (เพื่อน/คนสนิท)</div>
-                        <div class="card-body">
-                            <h5 class="card-title" id="resCasual">-</h5>
+    <div class="container pb-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-10">
+                <div class="main-card">
+                    <!-- Nav Tabs -->
+                    <ul class="nav nav-pills nav-justified mb-4" id="pills-tab" role="tablist">
+                        <li class="nav-item">
+                            <button class="nav-link active" data-bs-toggle="pill" data-bs-target="#translate" id="ui-tab-translate">แปลภาษาอัจฉริยะ</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#docs" id="ui-tab-docs">ร่างรายงาน/Email</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#glossary" id="ui-tab-glossary">คลังศัพท์ไม้</button>
+                        </li>
+                        <li class="nav-item">
+                            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#ocr" id="ui-tab-ocr">สแกนฉลาก (OCR)</button>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <!-- 1. Translation Tab -->
+                        <div class="tab-pane fade show active" id="translate">
+                            <div class="d-flex align-items-center mb-3">
+                                <div id="ui-trans-title-container" class="lang-badge-container" onclick="toggleTransMode()" title="คลิกเพื่อสลับทิศทางแปล / Click to swap direction">
+                                    <span class="lang-chip th">🇹🇭 ไทย</span>
+                                    <span class="lang-sep">↔</span>
+                                    <span class="lang-chip jp">🇯🇵 日本語</span>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <textarea class="form-control" id="thaiInput" rows="3" placeholder="พิมพ์ข้อความที่ต้องการแปล..." oninput="validateLanguage()"></textarea>
+                                <div id="ui-trans-warning" class="validate-warning">⚠️ กรุณาพิมพ์ภาษาไทยเพื่อให้แปลแม่นยำที่สุด</div>
+                            </div>
+                            <button onclick="runAction('/translate', 'translate')" class="btn btn-gradient w-100" id="btnTranslate">
+                                <span class="spinner-border spinner-border-sm loading-spinner"></span> <span id="ui-btn-translate">แปลภาษาทันที</span>
+                            </button>
+                            
+                            <div id="resTranslate" class="mt-4" style="display:none;">
+                                <div class="row">
+                                    <div class="col-md-4"><div class="result-box"><h6 id="ui-res-cas">Casual / General</h6><p id="resCas" class="fw-bold text-primary"></p></div></div>
+                                    <div class="col-md-4"><div class="result-box"><h6 id="ui-res-pol">Polite</h6><p id="resPol" class="fw-bold text-success"></p></div></div>
+                                    <div class="col-md-4"><div class="result-box"><h6 id="ui-res-bus">Business / Formal</h6><p id="resBus" class="fw-bold text-dark"></p></div></div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card text-white bg-success mb-3">
-                        <div class="card-header">Polite (ทั่วไป)</div>
-                        <div class="card-body">
-                            <h5 class="card-title" id="resPolite">-</h5>
+
+                        <!-- 2. Documentation Tab -->
+                        <div class="tab-pane fade" id="docs">
+                            <h4 class="mb-3" id="ui-docs-title">📝 ระบบร่างเอกสารอัตโนมัติ</h4>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-12">
+                                    <label class="form-label" id="ui-docs-label-date">วันที่เอกสาร</label>
+                                    <input type="date" class="form-control border-0 bg-light p-3" id="docDate">
+                                </div>
+                            </div>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label" id="ui-docs-label-type">ประเภทเอกสาร</label>
+                                    <select class="form-select border-0 bg-light p-3" id="docType">
+                                        <option value="weekly_report" id="opt-type-weekly">รายงานความคืบหน้ารายสัปดาห์ (Shuuhou) ⭐</option>
+                                        <option value="nippou" id="opt-type-nippou">รายงานประจำวัน (Nippou)</option>
+                                        <option value="email" id="opt-type-email">อีเมลธุรกิจ (Email)</option>
+                                        <option value="timber_status" id="opt-type-timber">รายงานสถิติงานไม้ (Timber Status)</option>
+                                        <option value="leave_request" id="opt-type-leave">แจ้งลา (Leave Request) 🤒</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label" id="ui-docs-label-recipient">ผู้รับสาร</label>
+                                    <select class="form-select border-0 bg-light p-3" id="docRecipient">
+                                        <option value="หัวหน้า (Manager)" id="opt-rec-mgr">หัวหน้า (Manager)</option>
+                                        <option value="รุ่นพี่ / Mentor" id="opt-rec-sen">รุ่นพี่ / Mentor</option>
+                                        <option value="ลูกค้า (Client)" id="opt-rec-cli">ลูกค้า (Client)</option>
+                                        <option value="เพื่อนร่วมงาน (Colleague)" id="opt-rec-col">เพื่อนร่วมงาน (Colleague)</option>
+                                        <option value="ทั่วไป" id="opt-rec-gen">บุคคลทั่วไป</option>
+                                    </select>
+                                </div>
+                                <div class="col-12" id="docFieldsContainer">
+                                    <div id="dynamicDocInputs" class="bg-light p-3 rounded-4">
+                                        <!-- Dynamic fields will be injected here -->
+                                    </div>
+                                    <label class="form-label small text-muted" id="ui-docs-label-file">แนบไฟล์ตัวอย่าง/เอกสารเก่า (ถ้ามี)</label>
+                                    <div class="custom-file-input">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary me-2" onclick="document.getElementById('docFile').click()" id="ui-btn-file-docs">เลือกไฟล์</button>
+                                        <span id="docFileName" class="small text-muted">ยังไม่ได้เลือกไฟล์</span>
+                                        <input type="file" id="docFile" style="display:none" onchange="updateFileName(this, 'docFileName')">
+                                    </div>
+                                </div>
+                            </div>
+                            <button onclick="runAction('/generate_doc', 'docs')" class="btn btn-gradient w-100 mt-3" id="btnDocs">
+                                <span class="spinner-border spinner-border-sm loading-spinner"></span> <span id="ui-btn-docs">ร่างเอกสารภาษาญี่ปุ่น</span>
+                            </button>
+                            <div id="resDocsArea" class="mt-4" style="display:none;">
+                                <div class="result-box bg-white shadow-sm">
+                                    <pre id="resDocs" style="white-space: pre-wrap;"></pre>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-                <div class="col-md-4">
-                    <div class="card text-white bg-dark mb-3">
-                        <div class="card-header">Business (ลูกค้า/หัวหน้า)</div>
-                        <div class="card-body">
-                            <h5 class="card-title" id="resBusiness">-</h5>
+
+                        <!-- 3. Glossary Tab -->
+                        <div class="tab-pane fade" id="glossary">
+                            <h4 class="mb-3" id="ui-glos-title">📚 คลังศัพท์เทคนิค (Timber & Business)</h4>
+                            <div class="input-group mb-3 shadow-sm rounded-3 overflow-hidden">
+                                <input type="text" class="form-control p-3 border-0 bg-light" id="termInput" placeholder="Search Timber Terms...">
+                                <button class="btn btn-gradient px-4" onclick="runAction('/search_glossary', 'glossary')" id="btnGlossary">
+                                    <span class="spinner-border spinner-border-sm loading-spinner" id="spinGlossary"></span>
+                                    <span id="ui-btn-glos">ค้นหา</span>
+                                </button>
+                            </div>
+                            <div id="resGlossary" class="mt-3" style="display:none;">
+                                <div class="result-box">
+                                    <h5 id="glossTermJP" class="text-primary mb-0"></h5>
+                                    <p id="glossReading" class="text-muted small italic mb-2"></p>
+                                    <p id="glossDef"></p>
+                                    <hr>
+                                    <small class="text-muted" id="ui-glos-ex">ตัวอย่างการใช้:</small>
+                                    <p id="glossExJP" class="mb-1 fw-bold"></p>
+                                    <p id="glossExTH" class="mb-0 italic"></p>
+                                </div>
+                            </div>
                         </div>
+
+                        <!-- 4. OCR Tab -->
+                        <div class="tab-pane fade" id="ocr">
+                            <h4 class="mb-3" id="ui-ocr-title">📸 สแกนฉลากไม้/ประกาศ (OCR)</h4>
+                            <div class="mb-3">
+                                <label class="form-label" id="ui-ocr-label">เลือกรูปภาพ</label>
+                                <div class="custom-file-input p-3 bg-light rounded-3 d-flex align-items-center">
+                                    <button type="button" class="btn btn-sm btn-outline-primary me-3" onclick="document.getElementById('ocrImage').click()" id="ui-btn-file-ocr">เลือกรูปภาพ</button>
+                                    <span id="ocrFileName" class="small text-muted">ยังไม่ได้เลือกไฟล์</span>
+                                    <input type="file" id="ocrImage" style="display:none" accept="image/*" onchange="updateFileName(this, 'ocrFileName')">
+                                </div>
+                            </div>
+                            <button class="btn btn-gradient w-100" onclick="runAction('/vision_ocr', 'ocr')" id="btnOCR">
+                                <span class="spinner-border spinner-border-sm loading-spinner"></span> <span id="ui-btn-ocr">สแกนและแปลผล</span>
+                            </button>
+                            <div id="resOCR" class="mt-4" style="display:none;">
+                                <div class="result-box mb-3">
+                                    <h6 id="ui-ocr-res-orig">ข้อความที่ตรวจเจอ:</h6>
+                                    <p id="ocrOrig" class="fw-bold"></p>
+                                </div>
+                                <div class="result-box bg-light">
+                                    <h6 id="ui-ocr-res-trans">คำแปล:</h6>
+                                    <p id="ocrTrans" class="text-success fw-bold"></p>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        async function translateText() {
+        let currentLang = 'th';
+        let transMode = 'th-jp'; // New state for translation direction
+        const translations = {
+            th: {
+                title: "JP-Thai Office Buddy",
+                subtitle: "ผู้ช่วย AI สำหรับพนักงานในอุตสาหกรรมไม้ญี่ปุ่น",
+                tab_trans: "แปลภาษาอัจฉริยะ",
+                tab_docs: "ร่างรายงาน/Email",
+                tab_glos: "คลังศัพท์ไม้",
+                tab_ocr: "สแกนฉลาก (OCR)",
+                trans_ph: "พิมพ์ข้อความที่ต้องการแปลลงที่นี่...",
+                trans_title: '<span class="lang-chip th">🇹🇭 ไทย</span> <span class="lang-sep">↔</span> <span class="lang-chip jp">🇯🇵 日本語</span>',
+                btn_trans: "แปลภาษาทันที",
+                res_cas: "ทั่วไป / เป็นกันเอง",
+                res_pol: "สุภาพ",
+                res_bus: "ทางธุรกิจ / ทางการ",
+                docs_title: "📝 ระบบร่างเอกสารอัตโนมัติ",
+                docs_date: "วันที่เอกสาร/วันที่มีผล",
+                docs_type: "ประเภทเอกสาร",
+                docs_recip: "ผู้รับสาร",
+                docs_info: "หัวใจสำคัญ/ข้อมูลดิบ",
+                docs_ph: "ระบุเนื้อหาสำคัญหรือข้อมูลดิบลงที่นี่...",
+                docs_file: "แนบไฟล์ตัวอย่าง/เอกสารเก่า (ถ้ามี)",
+                btn_docs: "ร่างเอกสารภาษาญี่ปุ่น",
+                opt_type_weekly: "รายงานความคืบหน้ารายสัปดาห์ (Shuuhou) ⭐",
+                opt_type_nippou: "รายงานประจำวัน (Nippou)",
+                opt_type_email: "อีเมลธุรกิจ (Email)",
+                opt_type_timber: "รายงานสถิติงานไม้ (Timber Status)",
+                f_work_done: "งานที่ทำเสร็จแล้ว:",
+                f_issues: "ปัญหาที่พบ/สิ่งที่ต้องปรับปรุง:",
+                f_next_week: "แผนงานสัปดาห์หน้า:",
+                f_today: "กิจกรรมวันนี้:",
+                f_tomorrow: "แผนงานวันพรุ่งนี้:",
+                f_subject: "หัวข้ออีเมล (ถ้ามี):",
+                f_body: "เนื้อหาใจความสำคัญ:",
+                f_status: "สถานะไม้ปัจจุบัน:",
+                f_leave_type: "ประเภทการลา (ลาป่วย/ลากิจ/ลาพักร้อน):",
+                f_leave_period: "ระยะเวลา (วันที่เริ่ม - วันที่สิ้นสุด):",
+                f_leave_reason: "เหตุผลในการลา (โดยสังเขป):",
+                opt_type_leave: "แจ้งลา (Leave Request) 🤒",
+                warn_th: "⚠️ กรุณาพิมพ์ภาษาไทยเพื่อให้แปลแม่นยำที่สุด",
+                warn_jp: "⚠️ 日本語を入力してください (正確な翻訳のため)",
+                opt_rec_mgr: "หัวหน้า (Manager)",
+                opt_rec_sen: "รุ่นพี่ / Mentor",
+                opt_rec_cli: "ลูกค้า (Client)",
+                opt_rec_col: "เพื่อนร่วมงาน (Colleague)",
+                opt_rec_gen: "บุคคลทั่วไป",
+                btn_file: "เลือกไฟล์",
+                no_file: "ยังไม่ได้เลือกไฟล์",
+                glos_title: "📚 คลังศัพท์เทคนิค (Thai ↔ Japanese)",
+                glos_ph: "พิมพ์คำศัพท์ (ไทย หรือ ญี่ปุ่น)...",
+                glos_btn: "ค้นหา",
+                glos_ex: "ตัวอย่างการใช้:",
+                ocr_title: "📸 สแกนฉลากไม้/ประกาศ (OCR)",
+                ocr_label: "เลือกรูปภาพ",
+                ocr_btn: "สแกนและแปลผล",
+                ocr_orig: "ข้อความที่ตรวจเจอ:",
+                ocr_trans: "คำแปล:"
+            },
+            jp: {
+                title: "JP-Thai オフィスバディ",
+                subtitle: "日本の木材業界で働くタイ人のためのAIアシスタント",
+                tab_trans: "スマート翻訳",
+                tab_docs: "書類・メール作成",
+                tab_glos: "木材用語集",
+                tab_ocr: "OCRスキャン",
+                trans_ph: "翻訳したいテキストを入力してください...",
+                trans_title: '<span class="lang-chip jp">🇯🇵 日本語</span> <span class="lang-sep">↔</span> <span class="lang-chip th">🇹🇭 ไทย</span>',
+                btn_trans: "今すぐ翻訳",
+                res_cas: "カジュアル / 一般",
+                res_pol: "丁寧",
+                res_bus: "ビジネス / 敬語",
+                docs_title: "📝 自動書類作成システム",
+                docs_date: "日付 / 適用日",
+                docs_type: "書類の種類",
+                docs_recip: "宛先",
+                docs_info: "主要な内容 / 生データ",
+                docs_ph: "主要な内容や生データをここに入力してください...",
+                docs_file: "参考資料・旧書類を添付（任意）",
+                btn_docs: "書類を作成する",
+                opt_type_weekly: "週報 (Weekly Report) ⭐",
+                opt_type_nippou: "日報 (Daily Report)",
+                opt_type_email: "ビジネスメール (Email)",
+                opt_type_timber: "木材ステータス報告 (Timber Status)",
+                f_work_done: "完了した作業:",
+                f_issues: "問題点・改善点:",
+                f_next_week: "来週の予定:",
+                f_today: "今日の活動:",
+                f_tomorrow: "明日の予定:",
+                f_subject: "件名 (任意):",
+                f_body: "主な内容:",
+                f_status: "現在の在庫・状況:",
+                f_leave_type: "休暇の種類 (病欠・用事・有給):",
+                f_leave_period: "期間 (開始日 - 終了日):",
+                f_leave_reason: "理由 (簡潔に):",
+                opt_type_leave: "休暇届 (Leave Request) 🤒",
+                warn_th: "⚠️ タイ語を入力してください",
+                warn_jp: "⚠️ 日本語を入力してください",
+                opt_rec_mgr: "上司・マネージャー (Manager)",
+                opt_rec_sen: "先輩・メンター (Mentor)",
+                opt_rec_cli: "顧客・クライアント (Client)",
+                opt_rec_col: "同僚 (Colleague)",
+                opt_rec_gen: "一般",
+                btn_file: "ファイルを選択",
+                no_file: "ファイルが選択されていません",
+                glos_title: "📚 専門用語集 (Thai ↔ Japanese)",
+                glos_ph: "単語を入力（タイ語・日本語）...",
+                glos_btn: "検索",
+                glos_ex: "使用例:",
+                ocr_title: "📸 OCRスキャン (ラベル・掲示板)",
+                ocr_label: "画像を選択",
+                ocr_btn: "スキャンして翻訳",
+                ocr_orig: "検出されたテキスト:",
+                ocr_trans: "翻訳結果:"
+            }
+        };
+
+        function updateFileName(input, targetId) {
+            const fileName = input.files[0] ? input.files[0].name : translations[currentLang].no_file;
+            document.getElementById(targetId).innerText = fileName;
+        }
+
+        function toggleLanguage() {
+            currentLang = currentLang === 'th' ? 'jp' : 'th';
+            updateUI();
+            updateDocFields(); // Refresh dynamic form labels
+            validateLanguage(); // Refresh validation warning text
+        }
+
+        function toggleTransMode() {
+            transMode = transMode === 'th-jp' ? 'jp-th' : 'th-jp';
+            updateTransUI();
+            validateLanguage(); // Re-validate on mode switch
+        }
+
+        function validateLanguage() {
             const text = document.getElementById('thaiInput').value;
-            if (!text) return alert("กรุณาพิมพ์ข้อความก่อนครับ");
-
-            // เปลี่ยนปุ่มเป็นกำลังโหลด
-            const btn = document.querySelector('button');
-            btn.innerText = "กำลังแปล... (รอแป๊บนึง)";
-            btn.disabled = true;
-
-            // ส่งข้อมูลไปหา Python
-            const formData = new FormData();
-            formData.append('text_input', text);
-
-            try {
-                const response = await fetch('/translate', {
-                    method: 'POST',
-                    body: formData
-                });
-                const data = await response.json();
-
-                if (data.error) {
-                    alert("เกิดข้อผิดพลาด: " + data.error);
-                } else {
-                    // เอาผลลัพธ์มาโชว์
-                    document.getElementById('resCasual').innerText = data.casual;
-                    document.getElementById('resPolite').innerText = data.polite;
-                    document.getElementById('resBusiness').innerText = data.business;
-                    document.getElementById('resultArea').style.display = 'block';
-                }
-            } catch (err) {
-                alert("เชื่อมต่อไม่ได้");
+            const warning = document.getElementById('ui-trans-warning');
+            if (!text) {
+                warning.style.display = 'none';
+                return;
             }
 
-            // คืนค่าปุ่ม
-            btn.innerText = "แปลภาษา (Translate)";
-            btn.disabled = false;
+            const isJP = /[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf\u3400-\u4dbf]/.test(text);
+            const isTH = /[\u0E00-\u0E7F]/.test(text);
+
+            let showWarning = false;
+            if (transMode === 'th-jp' && isJP && !isTH) showWarning = true;
+            if (transMode === 'jp-th' && isTH && !isJP) showWarning = true;
+
+            warning.style.display = showWarning ? 'block' : 'none';
+            warning.innerText = transMode === 'th-jp' ? translations[currentLang].warn_th : translations[currentLang].warn_jp;
+        }
+
+        function updateDocFields() {
+            const type = document.getElementById('docType').value;
+            const container = document.getElementById('dynamicDocInputs');
+            const t = translations[currentLang];
+            let fields = [];
+
+            if (type === 'weekly_report') {
+                fields = [
+                    { id: 'f1', label: t.f_work_done, key: 'work_done', rows: 3 },
+                    { id: 'f2', label: t.f_issues, key: 'issues', rows: 2 },
+                    { id: 'f3', label: t.f_next_week, key: 'next_week', rows: 2 }
+                ];
+            } else if (type === 'nippou') {
+                fields = [
+                    { id: 'f1', label: t.f_today, key: 'today', rows: 3 },
+                    { id: 'f2', label: t.f_tomorrow, key: 'tomorrow', rows: 2 }
+                ];
+            } else if (type === 'email') {
+                fields = [
+                    { id: 'f1', label: t.f_subject, key: 'subject', rows: 1 },
+                    { id: 'f2', label: t.f_body, key: 'body', rows: 4 }
+                ];
+            } else if (type === 'leave_request') {
+                fields = [
+                    { id: 'f1', label: t.f_leave_type, key: 'leave_type', rows: 1 },
+                    { id: 'f2', label: t.f_leave_period, key: 'period', rows: 1 },
+                    { id: 'f3', label: t.f_leave_reason, key: 'reason', rows: 2 }
+                ];
+            } else {
+                fields = [
+                    { id: 'f1', label: t.f_status, key: 'main', rows: 4 }
+                ];
+            }
+
+            container.innerHTML = fields.map(f => `
+                <div class="mb-2">
+                    <label class="dynamic-field-label px-2">${f.label}</label>
+                    <textarea class="form-control border-0 bg-light topic-field" id="${f.id}" rows="${f.rows}" data-key="${f.key}" placeholder="..."></textarea>
+                </div>
+            `).join('');
+        }
+
+        window.onload = () => {
+            updateUI();
+            updateDocFields();
+            
+            // Set default date to today
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('docDate').value = today;
+
+            document.getElementById('docType').addEventListener('change', updateDocFields);
+        };
+
+        function updateTransUI() {
+            const container = document.getElementById('ui-trans-title-container');
+            const thChip = '<span class="lang-chip th">🇹🇭 ไทย</span>';
+            const jpChip = '<span class="lang-chip jp">🇯🇵 日本語</span>';
+            const sep = '<span class="lang-sep">↔</span>';
+            
+            if (transMode === 'th-jp') {
+                container.innerHTML = `${thChip} ${sep} ${jpChip}`;
+                document.getElementById('thaiInput').placeholder = translations[currentLang].trans_ph;
+            } else {
+                container.innerHTML = `${jpChip} ${sep} ${thChip}`;
+                document.getElementById('thaiInput').placeholder = translations[currentLang].trans_ph;
+            }
+        }
+
+        function updateUI() {
+            const t = translations[currentLang];
+            const setUI = (id, text, attr = 'innerText') => {
+                const el = document.getElementById(id);
+                if (el) el[attr] = text;
+            };
+
+            setUI('langBtn', currentLang === 'th' ? '🇹🇭 ไทย' : '🇯🇵 日本語');
+            setUI('ui-hero-title', t.title);
+            setUI('ui-hero-subtitle', t.subtitle);
+            setUI('ui-tab-translate', t.tab_trans);
+            setUI('ui-tab-docs', t.tab_docs);
+            setUI('ui-tab-glossary', t.tab_glos);
+            setUI('ui-tab-ocr', t.tab_ocr);
+            
+            updateTransUI(); 
+            
+            setUI('ui-btn-translate', t.btn_trans);
+            
+            // Dynamic labels for Thai results
+            if (transMode === 'jp-th') {
+                setUI('ui-res-cas', t.res_cas); // ทั่วไป / เป็นกันเอง
+                setUI('ui-res-pol', "-");
+                setUI('ui-res-bus', t.res_bus); // สุภาพ / ทางการ
+            } else {
+                setUI('ui-res-cas', t.res_cas);
+                setUI('ui-res-pol', t.res_pol);
+                setUI('ui-res-bus', t.res_bus);
+            }
+            
+            setUI('ui-docs-title', t.docs_title);
+            setUI('ui-docs-label-date', t.docs_date);
+            setUI('ui-docs-label-type', t.docs_type);
+            setUI('ui-docs-label-recipient', t.docs_recip);
+            setUI('ui-docs-label-file', t.docs_file);
+            setUI('ui-btn-file-docs', t.btn_file);
+            const docFile = document.getElementById('docFile');
+            setUI('docFileName', docFile && docFile.files[0] ? docFile.files[0].name : t.no_file);
+            setUI('ui-btn-docs', t.btn_docs);
+            
+            // Update Select Options
+            ['opt-type-weekly', 'opt-type-nippou', 'opt-type-email', 'opt-type-timber', 'opt-type-leave',
+             'opt-rec-mgr', 'opt-rec-sen', 'opt-rec-cli', 'opt-rec-col', 'opt-rec-gen'
+            ].forEach(id => setUI(id, t[id.replace(/-/g, '_')]));
+
+            setUI('ui-glos-title', t.glos_title);
+            setUI('termInput', t.glos_ph, 'placeholder');
+            setUI('ui-btn-glos', t.glos_btn);
+            setUI('ui-glos-ex', t.glos_ex);
+            
+            setUI('ui-ocr-title', t.ocr_title);
+            setUI('ui-ocr-label', t.ocr_label);
+            setUI('ui-btn-file-ocr', t.btn_file);
+            const ocrFile = document.getElementById('ocrImage');
+            setUI('ocrFileName', ocrFile && ocrFile.files[0] ? ocrFile.files[0].name : t.no_file);
+            setUI('ui-btn-ocr', t.ocr_btn);
+            setUI('ui-ocr-res-orig', t.ocr_orig);
+            setUI('ui-ocr-res-trans', t.ocr_trans);
+        }
+
+        async function runAction(endpoint, mode) {
+            const btns = {
+                'translate': document.getElementById('btnTranslate'),
+                'docs': document.getElementById('btnDocs'),
+                'glossary': document.getElementById('btnGlossary'),
+                'ocr': document.getElementById('btnOCR')
+            };
+            const btn = btns[mode];
+            const spinner = btn.querySelector('.loading-spinner');
+
+            btn.disabled = true;
+            // Hide and clear previous results to avoid showing stale data
+            const resElements = ['resCas', 'resPol', 'resBus', 'resDocs', 'glossTermJP', 'glossReading', 'glossDef', 'glossExJP', 'glossExTH', 'ocrOrig', 'ocrTrans'];
+            resElements.forEach(id => {
+                const el = document.getElementById(id);
+                if(el) el.innerText = '';
+            });
+
+            document.getElementById('resTranslate').style.display = 'none';
+            document.getElementById('resDocsArea').style.display = 'none';
+            document.getElementById('resGlossary').style.display = 'none';
+            document.getElementById('resOCR').style.display = 'none';
+            if(spinner) spinner.style.display = 'inline-block';
+
+            try {
+                let payload;
+                let method = 'POST';
+                let headers = {};
+
+                if (mode === 'translate') {
+                    const textInput = document.getElementById('thaiInput').value.trim();
+                    if (!textInput) {
+                        throw new Error(currentLang === 'th' ? "กรุณาพิมพ์ข้อความที่ต้องการแปลก่อนนะครับ" : "翻訳するテキストを入力してください");
+                    }
+                    payload = new FormData();
+                    payload.append('text_input', textInput);
+                } else if (mode === 'docs') {
+                    // Collect all dynamic fields
+                    const fields = document.querySelectorAll('.topic-field');
+                    const topicObj = {};
+                    fields.forEach(f => {
+                        const val = f.value.trim();
+                        if (val) topicObj[f.getAttribute('data-key')] = val;
+                    });
+
+                    if (Object.keys(topicObj).length === 0) {
+                        throw new Error(currentLang === 'th' ? "กรุณากรอกข้อมูลจำกัดในช่องที่กำหนดก่อนครับ" : "情報を入力してください");
+                    }
+                    
+                    payload = new FormData();
+                    payload.append('type', document.getElementById('docType').value);
+                    payload.append('recipient', document.getElementById('docRecipient').value);
+                    payload.append('date', document.getElementById('docDate').value);
+                    payload.append('topic', JSON.stringify(topicObj));
+                    if (docFile) {
+                        payload.append('document', docFile);
+                    }
+                    // No need for Content-Type header with FormData
+                } else if (mode === 'glossary') {
+                    const term = document.getElementById('termInput').value.trim();
+                    if (!term) {
+                        throw new Error(currentLang === 'th' ? "กรุณาระบุคำศัพท์ที่ต้องการค้นหา" : "検索する用語を入力してください");
+                    }
+                    payload = JSON.stringify({ term: term, ui_lang: currentLang });
+                    headers = {'Content-Type': 'application/json'};
+                } else if (mode === 'ocr') {
+                    payload = new FormData();
+                    const fileInput = document.getElementById('ocrImage');
+                    if(fileInput.files.length === 0) throw new Error(currentLang === 'th' ? "กรุณาเลือกไฟล์" : "ファイルを選択してください");
+                    payload.append('image', fileInput.files[0]);
+                }
+
+                const response = await fetch(endpoint, { method, headers, body: payload });
+                const data = await response.json();
+
+                if (data.error) throw new Error(data.error);
+
+                displayResult(mode, data);
+
+            } catch (err) {
+                alert(currentLang === 'th' ? "เกิดข้อผิดพลาด: " + err.message : "エラーが発生しました: " + err.message);
+            } finally {
+                btn.disabled = false;
+                if(spinner) spinner.style.display = 'none';
+            }
+        }
+
+        function displayResult(mode, data) {
+            if (mode === 'translate') {
+                document.getElementById('resCas').innerText = data.casual;
+                document.getElementById('resPol').innerText = data.polite;
+                document.getElementById('resBus').innerText = data.business;
+                document.getElementById('resTranslate').style.display = 'block';
+            } else if (mode === 'docs') {
+                document.getElementById('resDocs').innerText = data.result;
+                document.getElementById('resDocsArea').style.display = 'block';
+            } else if (mode === 'glossary') {
+                document.getElementById('glossTermJP').innerHTML = `${data.term_main} <span class="mx-2 text-muted">↔</span> ${data.term_target}`;
+                document.getElementById('glossReading').innerText = data.reading ? `[${data.reading}]` : "";
+                document.getElementById('glossDef').innerText = data.definition;
+                document.getElementById('glossExJP').innerText = data.example_jp;
+                document.getElementById('glossExTH').innerText = data.example_th;
+                document.getElementById('resGlossary').style.display = 'block';
+            } else if (mode === 'ocr') {
+                document.getElementById('ocrOrig').innerText = data.original_text;
+                document.getElementById('ocrTrans').innerText = data.translated_text;
+                document.getElementById('resOCR').style.display = 'block';
+            }
+        }
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/static/service-worker.js')
+                    .then(reg => console.log('Service Worker Registered'))
+                    .catch(err => console.log('Service Worker Registration Failed', err));
+            });
         }
     </script>
 </body>
-
 </html>
