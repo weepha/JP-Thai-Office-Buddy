@@ -1014,7 +1014,8 @@
                     if (!politeInput) throw new Error(currentLang === 'th' ? "กรุณาระบุข้อความ" : "文章を入力してください");
                     payload = JSON.stringify({
                         text: politeInput,
-                        recipient: document.getElementById('politeRecipient').value
+                        recipient: document.getElementById('politeRecipient').value,
+                        ui_lang: currentLang
                     });
                     headers = {'Content-Type': 'application/json'};
                 }

@@ -91,21 +91,27 @@ def call_gemini_api(prompt, is_vision=False, image_data=None):
                 else:
                     msg = res_json.get('error', {}).get('message', 'Unknown API Error')
                     status_code = response.status_code
-                    last_error_data = {"error": f"API Error ({model_name} - {status_code}): {msg}"}
                     print(f"DEBUG: {model_name} failed with {status_code}: {msg}")
                     
                     if status_code == 429:
                         # If we hit 429 on one model, the key likely has exhausted its RPM or RPD.
+                        import re
+                        retry_match = re.search(r'retry in ([\d\.]+)s', msg)
+                        wait_msg = f" (กรุณารอประมาณ {retry_match.group(1)} วินาที)" if retry_match else ""
+                        error_msg = f"429: ⚠️ โควต้าฟรีของคุณเต็มชั่วคราวครับ{wait_msg}\n\nคำแนะนำ: เพิ่ม API Key สำรองในไฟล์ .env เพื่อให้ใช้งานได้ต่อเนื่องครับ"
+                        last_error_data = {"error": error_msg}
+                        
                         if len(API_KEYS) == 1:
                             print(f"DEBUG: Only one key available and it's rate-limited.")
-                            import re
-                            retry_match = re.search(r'retry in ([\d\.]+)s', msg)
-                            wait_msg = f" (กรุณารอประมาณ {retry_match.group(1)} วินาที)" if retry_match else ""
-                            return {"error": f"⚠️ โควต้าฟรีของคุณเต็มชั่วคราวครับ{wait_msg}\n\nคำแนะนำ: เพิ่ม API Key ชุดที่ 2 ในไฟล์ .env เพื่อให้ใช้งานได้ต่อเนื่องครับ"}
+                            return last_error_data
                         else:
                             print(f"DEBUG: Rate limited. Moving to next key...")
                             time.sleep(1) # Wait a bit
                         continue
+                    
+                    # Prevent overwriting a 429 error with a 404/403 from a fallback model
+                    if not ("429" in last_error_data.get("error", "")):
+                        last_error_data = {"error": f"API Error ({model_name} - {status_code}): {msg}"}
                     
                     continue
                     
@@ -354,6 +360,9 @@ def analyze_politeness():
         if not text:
              return jsonify({"error": "กรุณาระบุข้อความ"})
 
+        ui_lang = data.get('ui_lang', 'th')
+        explain_lang = "ภาษาไทย" if ui_lang == "th" else "ภาษาญี่ปุ่น (Japanese)"
+
         prompt_text = f"""
         คุณคือผู้เชี่ยวชาญด้านภาษาญี่ปุ่นและระดับความสุภาพ (Keigo) อ้างอิงมาตรฐาน Bunkacho
         จงวิเคราะห์ประโยคนี้: "{text.replace('"', '\\"')}"
@@ -362,9 +371,9 @@ def analyze_politeness():
         ตอบกลับมาเป็น JSON (หนีสัญลักษณ์เครื่องหมายคู่ (") ด้วย \\" และใช้ \\n สำหรับขึ้นบรรทัดใหม่):
         {{
             "original_text": "{text}",
-            "analysis": "วิเคราะห์ข้อผิดพลาดหรือจุดที่ควรปรับปรุง",
+            "analysis": "วิเคราะห์ข้อผิดพลาดหรือจุดที่ควรปรับปรุง (เขียนด้วย{explain_lang})",
             "suggestion": "ประโยคที่แนะนำให้ใช้ (ภาษาญี่ปุ่น)",
-            "explanation": "คำอธิบายไวยากรณ์และความสุภาพ"
+            "explanation": "คำอธิบายไวยากรณ์และความสุภาพ (เขียนด้วย{explain_lang})"
         }}
         """
 
