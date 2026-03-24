@@ -62,13 +62,30 @@
             transition: all 0.3s ease;
         }
 
+        .nav-pills {
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 20px;
+            padding: 10px;
+            border: 1px solid var(--glass-border);
+            box-shadow: inset 0 2px 10px rgba(0,0,0,0.02);
+            gap: 5px;
+        }
+
         .nav-pills .nav-link {
             border-radius: 15px;
-            padding: 12px 20px;
+            padding: 12px 15px;
             font-weight: 600;
             color: var(--secondary);
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            margin: 0 5px;
+            margin: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+        }
+
+        .nav-pills .nav-link:not(.active):hover {
+            background: rgba(255, 255, 255, 0.8);
         }
 
         .nav-pills .nav-link.active {
@@ -76,6 +93,16 @@
             box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
             transform: translateY(-2px);
             color: white !important;
+        }
+
+        @media (max-width: 768px) {
+            .nav-pills .nav-item {
+                flex: 0 0 48%; /* 2x2 Grid on Mobile */
+            }
+            .nav-pills .nav-link {
+                padding: 10px 5px;
+                font-size: 0.85rem;
+            }
         }
 
         .btn-gradient {
@@ -227,6 +254,57 @@
         }
         .btn:active {
             transform: scale(0.95) !important;
+        }
+
+        /* --- Comprehensive Mobile UI Overrides --- */
+        @media (max-width: 576px) {
+            .hero-section {
+                padding: 50px 0 70px;
+            }
+            .hero-section img {
+                width: 90px !important;
+                height: 90px !important;
+                border-width: 3px !important;
+                margin-bottom: 1rem !important;
+            }
+            .display-4 {
+                font-size: 1.8rem !important;
+            }
+            .lead {
+                font-size: 0.95rem !important;
+                margin-bottom: 0 !important;
+            }
+            .main-card {
+                padding: 1.25rem !important;
+                border-radius: 20px !important;
+                margin-top: 10px !important;
+            }
+            h3, h4, h5 {
+                font-size: 1.15rem !important;
+            }
+            .form-control, .form-select {
+                padding: 12px 14px !important;
+                font-size: 0.95rem !important;
+            }
+            pre {
+                font-size: 1rem !important;
+                padding: 12px !important;
+            }
+            .result-box {
+                padding: 15px !important;
+                border-radius: 15px !important;
+            }
+            .lang-switcher {
+                top: 15px;
+                right: 15px;
+            }
+            .btn-gradient {
+                width: 100% !important;
+            }
+            /* Fix Radio buttons on mobile Translation Tab */
+            .form-check {
+                margin-bottom: 0.5rem;
+            }
         }
     </style>
 </head>
