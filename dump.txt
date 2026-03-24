@@ -1,0 +1,21 @@
+Line 344: <label class="form-label small text-muted" id="ui-docs-label-file">ข้อมูลอ้างอิงเพิ่มเติม (Optional: Attach reference .txt, .pdf)</label>
+Line 362: <button class="btn btn-sm btn-outline-success" id="btnSaveWord" onclick="downloadDoc()"><i class='bi bi-floppy text-success'></i> <span id="ui-btn-save-docs">Save Word</span></button>
+Line 364: <button class="btn btn-sm btn-outline-secondary" id="btnSaveTXT" onclick="downloadTXT()"><i class='bi bi-file-text text-secondary'></i> <span id="ui-btn-save-txt">Save TXT</span></button>
+Line 493: docs_file: "ข้อมูลอ้างอิงเพิ่มเติม (Optional: Attach reference .txt, .pdf)",
+Line 562: btn_save_doc: "บันทึก Word",
+Line 564: btn_save_txt: "บันทึก TXT",
+Line 610: docs_file: "参考資料（任意投稿 .txt, .pdf）",
+Line 679: btn_save_doc: "Word保存",
+Line 681: btn_save_txt: "TXT保存",
+Line 939: setUI('ui-btn-save-txt', t.btn_save_txt);
+Line 1139: const wordBtn = document.getElementById('btnSaveWord');
+Line 1141: const txtBtn = document.getElementById('btnSaveTXT');
+Line 1144: if (wordBtn) wordBtn.style.display = isEmail ? 'none' : 'inline-block';
+Line 1146: if (txtBtn) txtBtn.style.display = isEmail ? 'none' : 'inline-block';
+Line 1170: // Clean markdown symbols for cleaner pasting in Word
+Line 1188: // Convert newlines to <br> for Word compatibility
+Line 1191: // Professional formatted Word HTML blob
+Line 1193: <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
+Line 1206: const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword' });
+Line 1265: function downloadTXT() {
+Line 1274: a.download = `OfficeBuddy_${type}_${date}.txt`;

@@ -1,446 +1,875 @@
 from flask import Flask, render_template, request, jsonify
+
 from flask_cors import CORS
+
 import json
+
 import requests
+
 from pypdf import PdfReader
+
 import base64
+
 import mimetypes
+
 import os
+
 import time
+
 from dotenv import load_dotenv
 
+
+
 # โหลดค่าจากไฟล์ .env
+
 load_dotenv()
 
+
+
 app = Flask(__name__)
+
 CORS(app)
 
+
+
 # ดึง API Keys จากไฟล์ .env (รองรับ GEMINI_API_KEY และ GEMINI_API_KEY_1-5)
+
 API_KEYS = [os.getenv("GEMINI_API_KEY")] + [os.getenv(f"GEMINI_API_KEY_{i}") for i in range(1, 6)]
+
 # กรองเฉพาะคีย์ที่มีการใส่ค่าจริง (ข้าม placeholder ภาษาไทย)
+
 API_KEYS = [k.strip() for k in API_KEYS if k and not any(p in k for p in ["ใส่_คีย์", "ใส่_API", "YOUR_API"])]
 
+
+
 # --- กำหนดค่า AI ให้คงที่และแม่นยำ (Deterministic Settings) ---
+
 AI_CONFIG = {
+
     "temperature": 0.0,
+
     "top_p": 1,
+
     "top_k": 1,
+
     "max_output_tokens": 2048,
+
 }
 
+
+
 def try_extract_json(text):
+
     """ฟังก์ชันช่วยสกัด JSON ออกจากข้อความของ AI ที่อาจมีส่วนเกิน"""
+
     try:
+
         # พยายามหากลุ่มข้อความที่อยู่ใน { ... }
+
         import re
+
         json_match = re.search(r'(\{.*\})', text, re.DOTALL)
+
         if json_match:
+
             text = json_match.group(1)
+
         
+
         # ล้าง markdown และช่องว่าง
+
         clean_json = text.replace('```json', '').replace('```', '').strip()
+
         return json.loads(clean_json)
+
     except Exception as e:
+
         print(f"JSON Parse Error: {e} | Original text: {text}")
+
         return None
 
-def call_gemini_api(prompt, is_vision=False, image_data=None):
+
+
+def call_gemini_api(prompt, is_vision=False, image_data=None, require_json=False):
+
     """ฟังก์ชันกลางสำหรับเรียก Gemini API พร้อมระบบสลับคีย์และรุ่นโมเดลอัตโนมัติ (Double Fallback)"""
+
     last_error = "No API Keys configured"
+
     
-    # รายชื่อรุ่นโมเดลที่จะพยายามเรียก (Fallback List - จัดลำดับตามความน่าเชื่อถือและที่มีใช้งานจริง)
-    models_to_try = [
-        "gemini-flash-latest",     # เสถียรที่สุดในเวอร์ชันปัจจุบัน
-        "gemini-2.0-flash",        # รวดเร็วและมีความฉลาดสูง
-        "gemini-1.5-flash",        # สำหรับบาง API Key ที่อาจระบุรุ่นตายตัว
-        "gemini-pro-latest",
-        "gemini-1.5-pro",
-        "gemini-1.5-flash-8b"
-    ]
+
+    # Reload dotenv to catch any new keys the user just saved without restarting the server
+
+    load_dotenv(override=True)
+
+    current_keys = [os.getenv("GEMINI_API_KEY")] + [os.getenv(f"GEMINI_API_KEY_{i}") for i in range(1, 6)]
+
+    current_keys = [k.strip() for k in current_keys if k and not any(p in k for p in ["ใส่_คีย์", "ใส่_API", "YOUR_API"])]
+
     
+
+    if not current_keys:
+
+        return {"error": "ไม่พบ API Key ในระบบครับ กรุณาเปิดไฟล์ .env แล้วใส่ GEMINI_API_KEY ก่อนใช้งานครับ"}
+
+        
+
     last_error_data = {"error": "ไม่สามารถติดต่อ AI ได้ในขณะนี้ (ตรวจสอบ API Key หรืออินเทอร์เน็ตครับ)"}
 
+
+
+    # รายชื่อรุ่นโมเดลที่จะพยายามเรียก (Fallback List - จัดลำดับตามความน่าเชื่อถือและที่มีใช้งานจริง)
+
+    models_to_try = [
+
+        "gemini-2.5-flash",        # รุ่นใหม่ล่าสุด
+
+        "gemini-2.0-flash",        # รวดเร็วและมีความฉลาดสูง
+
+        "gemini-flash-latest",     # รุ่นเสถียรล่าสุดแบบออโต้
+
+    ]
+
+    
+
     for model_name in models_to_try:
-        for key_index, key in enumerate(API_KEYS):
+
+        for key_index, key in enumerate(current_keys):
+
             try:
+
                 # Log the start of the attempt
-                current_try = f"Attempt: [Model: {model_name}] [Key: {key_index+1}/{len(API_KEYS)}]"
+
+                current_try = f"Attempt: [Model: {model_name}] [Key: {key_index+1}/{len(current_keys)}]"
+
                 print(f"DEBUG: {current_try} - Sending request...")
+
                 
+
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={key}"
+
                 
-                payload = {"contents": [{"parts": [{"text": prompt}]}], "generationConfig": AI_CONFIG}
+
+                gen_config = dict(AI_CONFIG)
+                if require_json:
+                    gen_config["responseMimeType"] = "application/json"
+                payload = {"contents": [{"parts": [{"text": prompt}]}], "generationConfig": gen_config}
+
                 if is_vision:
+
                     payload["contents"][0]["parts"].append({"inline_data": image_data})
+
                 
+
                 headers = {'Content-Type': 'application/json'}
+
                 response = requests.post(url, headers=headers, json=payload, timeout=30)
+
                 res_json = response.json()
+
                 
+
                 if response.status_code == 200:
+
                     cand = res_json.get('candidates', [{}])[0]
+
                     if 'content' in cand:
+
                         print(f"DEBUG: Success with {model_name}")
+
                         return cand['content']['parts'][0]['text']
+
                     else:
+
                         finish_reason = cand.get('finishReason', 'Unknown')
+
                         last_error = f"AI Blocked (Reason: {finish_reason})"
+
                         print(f"DEBUG: {model_name} blocked response. Reason: {finish_reason}")
+
                         continue
+
                 
+
                 else:
+
                     msg = res_json.get('error', {}).get('message', 'Unknown API Error')
+
                     status_code = response.status_code
+
                     print(f"DEBUG: {model_name} failed with {status_code}: {msg}")
+
                     
+
                     if status_code == 429:
+
                         # If we hit 429 on one model, the key likely has exhausted its RPM or RPD.
+
                         import re
+
                         retry_match = re.search(r'retry in ([\d\.]+)s', msg)
+
                         wait_msg = f" (กรุณารอประมาณ {retry_match.group(1)} วินาที)" if retry_match else ""
+
                         error_msg = f"429: ⚠️ โควต้าฟรีของคุณเต็มชั่วคราวครับ{wait_msg}\n\nคำแนะนำ: เพิ่ม API Key สำรองในไฟล์ .env เพื่อให้ใช้งานได้ต่อเนื่องครับ"
+
                         last_error_data = {"error": error_msg}
+
                         
-                        if len(API_KEYS) == 1:
+
+                        if len(current_keys) == 1:
+
                             print(f"DEBUG: Only one key available and it's rate-limited.")
+
                             return last_error_data
+
                         else:
+
                             print(f"DEBUG: Rate limited. Moving to next key...")
+
                             time.sleep(1) # Wait a bit
+
                         continue
+
                     
+
                     # Prevent overwriting a 429 error with a 404/403 from a fallback model
+
                     if not ("429" in last_error_data.get("error", "")):
+
                         last_error_data = {"error": f"API Error ({model_name} - {status_code}): {msg}"}
+
                     
+
                     continue
+
                     
+
             except Exception as e:
+
                 last_error_data = {"error": f"Crashed on {model_name}: {str(e)}"}
+
                 print(f"DEBUG: Unexpected error on {model_name}: {str(e)}")
+
                 continue
+
             
+
     return last_error_data
 
+
+
 @app.route('/')
+
 def home():
+
     return render_template('index.html')
 
+
+
 @app.route('/translate', methods=['POST'])
+
 def translate():
+
     user_text = request.form.get('text_input')
+
+    ui_lang = request.form.get('ui_lang', 'th')
+
+    trans_mode = request.form.get('trans_mode', 'read')
+
     if not user_text:
+
         return jsonify({"error": "No text provided"}), 400
 
-    # ปรับปรุง Prompt ให้รองรับระดับภาษาไทย (Registers) และบังคับการหนีสัญลักษณ์ (Escaping)
-    user_text_escaped = user_text.replace('"', '\\"')
-    prompt_text = f"""
-    คุณคือผู้ช่วยแปลภาษาอัจฉริยะ (Thai ↔ Japanese)
-    ข้อความที่ต้องการให้แปล: "{user_text_escaped}"
+
+
+    user_text_escaped = user_text.replace('"', '\"')
+
     
-    ภารกิจ:
-    - หากคุณได้รับภาษาไทย: แปลเป็นภาษาญี่ปุ่น 3 ระดับ (Casual, Polite, Business) พร้อมกำกับ [Romaji]
-    - หากคุณได้รับภาษาญี่ปุ่น: แปลเป็นภาษาไทย 2 ระดับ
-        1. **สุภาพ/ทางการ**: ใช้ในบริบททำงานหรือส่งข้อความหาหัวหน้า (ใช้ครับ/ค่ะ, ภาษาสุภาพ)
-        2. **ทั่วไป/เป็นกันเอง**: ใช้คุยกับเพื่อนหรือคนสนิท
+
+    # User Explicit Intent
+
+    is_draft_mode = (trans_mode == 'draft')
+
     
-    ข้อกำหนดด้านรูปแบบ (Format Requirement):
-    - ตอบกลับเป็น JSON เท่านั้น
-    - **สำคัญมาก**: หากในคำแปลมีเครื่องหมายอัญประกาศ (") ให้ใช้การหนีสัญลักษณ์ (Escape) เป็น \\" เสมอ
-    - **สำคัญมาก**: หากมีการขึ้นบรรทัดใหม่ในเนื้อหา ให้ใช้ \\n แทนการขึ้นบรรทัดจริงใน JSON
+
+    if ui_lang == 'th':
+        if not is_draft_mode:
+            prompt_text = f'''
+            คุณคือผู้ช่วยแปลภาษาอัจฉริยะ (Thai ↔ Japanese)
+            ข้อความที่ต้องการแปล/อธิบายความหมาย: "{user_text_escaped}"
+            
+            ภารกิจ: เป้าหมายของผู้ใช้คือ "อ่านเพื่อทำความเข้าใจ" ไม่ต้องการข้อมูลยืดเยื้อหรือ 3 ระดับ
+            1. วิเคราะห์ว่าข้อความเป็นภาษาอะไร และแปลเป็นอีกภาษาหนึ่ง (มักจะเป็นญี่ปุ่นเป็นไทย)
+            2. พิมพ์คำแปลทั้งหมดลงในช่อง "business" (ความหมายหลัก/แปลแบบเป็นทางการ) ให้ครบถ้วนที่สุด
+            3. ใส่ช่อง "casual" ว่า "โหมดอ่านจับใจความ"
+            
+            ตอบกลับเป็น JSON เท่านั้น (หนีสัญลักษณ์เครื่องหมายคู่ (") ด้วย \" และใช้ \n สำหรับการขึ้นบรรทัดใหม่):
+            {{
+                "casual": "โหมดอ่านจับใจความ",
+                "polite": "-",
+                "business": "คำแปลทั้งหมดที่อิงตามบริบทและเป็นทางการ"
+            }}
+            '''
+        else:
+            prompt_text = f'''
+            คุณคือผู้ช่วยแปลภาษาอัจฉริยะ (Thai ↔ Japanese)
+            ข้อความที่ต้องการแปล: "{user_text_escaped}"
+            
+            ภารกิจ: แปลข้อความนี้ออกเป็น 3 ระดับ (แตกย่อย 3 ระดับ) เพื่อให้คนไทยนำไปแต่งประโยคหรือพิจารณาเลือกใช้
+            1. ถ้าข้อความเป็นภาษาไทย: ให้แปลเป็นภาษาญี่ปุ่น 3 ระดับ พร้อมกำกับ [Romaji] เพื่อนำไปพูด
+            2. ถ้าข้อความเป็นภาษาญี่ปุ่น: ให้แปลเป็นภาษาไทย 3 ระดับ (เป็นกันเอง, สุภาพ, ทางการ) เพื่ออ่านความหมายและบริบท
+            
+            ตอบกลับเป็น JSON เท่านั้น (หนีสัญลักษณ์เครื่องหมายคู่ (") ด้วย \" และใช้ \n สำหรับการขึ้นบรรทัดใหม่):
+            {{
+                "casual": "คำแปลระดับเป็นกันเอง",
+                "polite": "คำแปลระดับสุภาพ",
+                "business": "คำแปลระดับทางการ/ธุรกิจ"
+            }}
+            '''
+    else:  # ui_lang == 'jp'
+        if not is_draft_mode:
+            prompt_text = f'''
+            あなたはプロのビジネス翻訳者です。(Thai ↔ Japanese)
+            翻訳/意味を説明したい文章: "{user_text_escaped}"
+            
+            ミッション: ユーザーの目的は「意味を読んで理解すること」です。（3つのレベルや詳細な説明は不要）
+            1. 文章がどの言語かを判断し、もう一方の言語（通常はタイ語 -> 日本語）に翻訳してください。
+            2. 最適な翻訳と意味を、"business" フィールドにすべて記載してください。
+            3. "casual" フィールドには "意訳・全体翻訳モード" と記載してください。
+            
+            JSON形式のみで返答してください (ダブルクォーテーション (") は \" でエスケープし、改行には \n を使用してください):
+            {{
+                "casual": "意訳・全体翻訳モード",
+                "polite": "-",
+                "business": "文脈に沿った正確な翻訳内容全体 (日本語ならタイ語, タイ語なら日本語)"
+            }}
+            '''
+        else:
+            prompt_text = f'''
+            あなたは高度なAI翻訳アシスタントです。(Japanese ↔ Thai)
+            翻訳したい文章: "{user_text_escaped}"
+            
+            ミッション: この文章を3つのレベル（丁寧さ）に分けて翻訳し、日本人がタイ語を使う（またはタイ語を選ぶ）ためのドラフトを作成してください。
+            1. 文章が日本語の場合: タイ語に3つのレベルで翻訳し、[カタカナ発音] と 日本語での簡単な解説を付け加えてください。
+               - casual: カジュアル（同僚向け）
+               - polite: 丁寧（「クラップ/カー」を含む）
+               - business: ビジネス（敬語、メール、取引先向け）※丁寧と同じ場合は同じ内容で可。
+            2. 文章がタイ語の場合: 日本語に3つのレベルで翻訳してください。
+            
+            JSON形式のみで返答してください (ダブルクォーテーション (") は \" でエスケープし、改行には \n を使用してください):
+            {{
+                "casual": "タイ語翻訳 [カタカナ発音] (日本語でのごく短い解説)",
+                "polite": "タイ語翻訳 [カタカナ発音]",
+                "business": "タイ語翻訳 [カタカナ発音]"
+            }}
+            '''
+    result = call_gemini_api(prompt_text, require_json=True)
+
     
-    JSON Structure:
-    {{
-        "casual": "คำแปลระดับเป็นกันเอง",
-        "polite": "คำแปลระดับสุภาพ",
-        "business": "คำแปลระดับทางการ/ธุรกิจ"
-    }}
-    """
-    
-    result = call_gemini_api(prompt_text)
-    
+
     if isinstance(result, dict) and "error" in result:
+
         status_code = 429 if "429" in str(result.get("error")) else 500
+
         # ปรับข้อความ Error ให้เป็นมิตรขึ้นถ้าเป็น 429
+
         if status_code == 429:
+
             result["error"] = "⚠️ Gemini Quota Exceeded: โควต้าฟรีเต็มชั่วคราวครับ\n\nวิธีแก้:\n1. รอประมาณ 1-2 นาทีแล้วลองใหม่\n2. เพิ่ม API Key สำรองในไฟล์ .env (GEMINI_API_KEY_2, _3, ...) เพื่อให้ระบบสลับคีย์อัตโนมัติ"
+
         return jsonify(result), status_code
+
         
+
     parsed_data = try_extract_json(result)
+
     if parsed_data:
+
         return jsonify(parsed_data)
+
     else:
+
         return jsonify({"error": "AI ตอบกลับในรูปแบบที่ประมวลผลไม่ได้ครับ", "ai_response": result}), 500
 
+
+
 @app.route('/verify_content', methods=['POST'])
+
 def verify_content():
-    """เอนพอยต์เฉพาะสำหรับการตรวจสอบเนื้อหาภาษาญี่ปุ่น (แปลกลับเป็นไทยอย่างละเอียดเพียงระดับเดียว)"""
-    jp_text = request.form.get('text_input')
-    if not jp_text:
+
+    text_input = request.form.get('text_input')
+
+    ui_lang = request.form.get('ui_lang', 'th')
+
+    if not text_input:
+
         return jsonify({"error": "No text provided"}), 400
 
-    prompt_text = f"""
-    คุณคือผู้เชี่ยวชาญการตรวจเอกสาร (Japanese -> Thai)
-    ภารกิจ: แปลข้อความภาษาญี่ปุ่นนี้กลับเป็นภาษาไทยอย่างละเอียดที่สุด เพื่อให้ผู้ใช้ตรวจสอบความถูกต้องของเนื้อหา
+
+
+    if ui_lang == 'th':
+
+        src_lang = "ภาษาญี่ปุ่น"
+
+        dst_lang = "ภาษาไทย"
+
+    else:
+
+        src_lang = "ภาษาไทย"
+
+        dst_lang = "ภาษาญี่ปุ่น"
+
+
+
+    # สร้าง Prompt แบบไม่ใช้ f-string กับ text_input โดยตรงเพื่อป้องกันปัญหาเครื่องหมาย {}
+    prompt_text = (
+        f"คุณคือผู้แปลเพื่อการตรวจทานเอกสาร (Verification Translator) ภารกิจคือการแปลจาก {src_lang} เป็น {dst_lang}\n"
+        "คำสั่งสำคัญ: แปลข้อความด้านล่างนี้แบบ 'ครบถ้วน 100% ทุกคำและทุกบรรทัด' ห้ามย่อความ ห้ามสรุป และห้ามตัดส่วนใดทิ้งเด็ดขาด\n\n"
+        "ข้อความต้นฉบับที่ต้องแปล:\n"
+        "--- START ---\n"
+        + text_input +
+        "\n--- END ---\n\n"
+        "ข้อกำหนดการแปล:\n"
+        "1. แปลทุกส่วน: วันที่, ชื่อผู้ส่ง, ชื่อผู้รับ, หัวข้อเรื่อง (Subject), เนื้อหาทุกย่อหน้า และคำลงท้าย\n"
+        "2. รักษารูปแบบ: จัดวางลำดับและเว้นวรรคให้เหมือนต้นฉบับ เพื่อให้ผู้ใช้ตรวจทานได้ง่าย\n"
+        f"3. ส่งคืนเฉพาะคำแปล {dst_lang} เท่านั้น ห้ามระบุข้อความอธิบายเพิ่มเติมจาก AI\n"
+    )
+
     
-    ข้อความภาษาญี่ปุ่น: 
-    "{jp_text.replace('"', '\\"')}"
-    
-    ข้อกำหนด:
-    1. แปลให้ครบถ้วนทุกประเด็น ห้ามย่อความ
-    2. ใช้ระดับภาษาที่สุภาพและเป็นทางการ (Polite/Business)
-    3. หากมีการใช้คำศัพท์เฉพาะทางอุตสาหกรรมไม้ ให้ระบุคำแปลที่ถูกต้อง
-    4. **สำคัญ: ให้ตอบกลับเฉพาะคำแปลภาษาไทยเท่านั้น ไม่ต้องใช้ JSON ไม่ต้องมีหัวข้อ หรือคำนำใดๆ**
-    """
-    
+
     result = call_gemini_api(prompt_text)
+
     
+
     if isinstance(result, dict) and "error" in result:
+
         return jsonify(result), 500
+
         
+
     # คืนค่าเป็นข้อความดิบ (Plain Text) เพื่อความเสถียรสูงสุด
+
     return result.strip() if result else "ไม่สามารถประมวลผลได้"
 
+
+
 @app.route('/generate_doc', methods=['POST'])
+
 def generate_doc():
+
     try:
+
         # Handle both JSON and Form data (for file uploads)
+
         if request.is_json:
+
             data = request.json
+
         else:
+
             data = request.form
+
             
+
         doc_type = data.get('type', 'email')
+
         recipient = data.get('recipient', 'ลูกค้า/หัวหน้า')
+
         date_val = data.get('date', '')
+
         topic = data.get('topic', '')
+
         
+
         # Check for optional file attachment for reference
+
         reference_text = ""
+
         is_file_attached = False
+
         if 'document' in request.files:
+
             ref_file = request.files['document']
+
             if ref_file.filename != '':
+
                 is_file_attached = True
+
                 if ref_file.filename.endswith(('.txt', '.md')):
+
                     reference_text = ref_file.read().decode('utf-8')
+
                 elif ref_file.filename.lower().endswith('.pdf'):
+
                     try:
+
                         reader = PdfReader(ref_file)
+
                         for page in reader.pages:
+
                             reference_text += page.extract_text() + "\n"
+
                         
+
                         if not reference_text.strip():
+
                             return jsonify({"error": "ไม่พบข้อความในไฟล์ PDF นี้ครับ (อาจเป็นไฟล์ที่สแกนมาเป็นรูปภาพ) กรุณาลองใช้การสแกนรูปภาพ (OCR) แทนครับ"})
+
                     except Exception as e:
+
                         print(f"PDF Error: {e}")
+
                         return jsonify({"error": "ไม่สามารถอ่านไฟล์ PDF นี้ได้ครับ ไฟล์อาจถูกล็อกหรือเสียหาย"})
+
                 elif ref_file.filename.lower().endswith(('.png', '.jpg', '.jpeg')):
+
                     # Optional: Add image OCR here if needed later
+
                     pass
+
         
+
         if not topic and not reference_text:
+
              return jsonify({"error": "กรุณาระบุหัวข้อหรือแนบไฟล์เอกสารที่ต้องการให้ปรับปรุงครับ"})
 
+
+
         # Handle structured JSON from dynamic fields
+
+        # Extract sender/recipient name & structured fields from topic JSON
+
+        sender_name = ""
+
+        recipient_name = ""
+
         context_str = ""
+
         try:
+
             topic_obj = json.loads(topic)
+
             for key, val in topic_obj.items():
-                context_str += f"{val}\n"
+
+                if 'sender' in key.lower() or '\u0c9c\u0cc0\u0cc2\u0caa\u0cc1' in key.lower() or '\u0e1c\u0e39\u0e49\u0e2a\u0e48\u0e07' in key.lower():
+
+                    sender_name = val
+
+                elif 'recipient name' in key.lower() or '\u0e23\u0e31\u0e1a\u0e40\u0e08\u0e32\u0e30\u0e08\u0e07' in key.lower():
+
+                    recipient_name = val
+
+                elif val:
+
+                    context_str += f"- {key}: {val}\n"
+
         except:
-            context_str = topic
+            context_str = str(topic)
+
+
 
         if reference_text:
-            context_str += f"\nข้อมูลอ้างอิงจากเอกสารเดิม: {reference_text}"
 
-        # Build specialized prompt based on industry focus
+            context_str += f"\n\nข้อมูลอ้างอิงจากเอกสารเดิม:\n{reference_text}"
+
+
+
+        # Map doc_type keys to proper human-readable names for the AI
+        DOC_TYPE_NAMES = {
+            "weekly_report": "รายงานประจำสัปดาห์ (週報)",
+            "nippou": "รายงานประจำวัน (日報)",
+            "quality_claim": "หนังสือแจ้งข้อร้องเรียนคุณภาพ (クレームレター)",
+            "email_task_done": "อีเมลแจ้งเสร็จงาน (業務完了メール)",
+            "email_action_taken": "อีเมลแจ้งดำเนินการแล้ว (対応完了メール)",
+            "email_follow_up": "อีเมล Follow-up ติดตามงาน (確認メール)",
+            "email": "อีเมลธุรกิจทั่วไป (ビジネスメール)",
+            "leave_request": "ใบขอลาป่วย/ลากิจ (休暇申請メール)",
+            "reimbursement": "ใบเบิกค่าใช้จ่าย (経費精算書)",
+            "request_equip": "ใบขอเบิกอุปกรณ์ (物品請求書)",
+            "repair": "ใบแจ้งซ่อม (修理依頼書)",
+        }
+        doc_type_display = DOC_TYPE_NAMES.get(doc_type, doc_type)
+
+        ui_lang = data.get('ui_lang', 'th')
+        sender_line = f"ผู้ส่ง: {sender_name}" if sender_name else ""
+        recipient_name_line = f"ชื่อผู้รับ: {recipient_name}" if recipient_name else ""
+        date_line = f"วันที่: {date_val}" if date_val else ""
+
+        if ui_lang == 'th':
+            target_lang = "ภาษาญี่ปุ่นทางการ (Business Japanese)"
+            # Specify exact Japanese business email structure
+            format_rules = """
+        โครงสร้างที่ถูกต้องของอีเมลธุรกิจญี่ปุ่น (ห้ามเปลี่ยนลำดับ):
+        [วันที่ เช่น 2026年3月24日]
+        [ชื่อผู้รับ]様  ← ถ้าไม่มีชื่อให้ใส่ตำแหน่งแทน เช่น ご担当者
+        [บรรทัดว่าง]
+        件名：[หัวข้อสรุป 1 บรรทัด]
+        [บรรทัดว่าง]
+        いつもお世話になっております。[ชื่อผู้ส่ง/บริษัท]でございます。
+        [เนื้อหาหลัก]
+        [บรรทัดว่าง]
+        何卒よろしくお願いいたします。
+        [บรรทัดว่าง]
+        敬具
+        [บรรทัดว่าง]
+        [ชื่อผู้ส่ง] ← อยู่ด้านล่างสุดเท่านั้น ห้ามวางชื่อผู้ส่งไว้กลางเอกสาร
+        """
+        else:
+            target_lang = "ภาษาไทยทางการ (Formal Thai)"
+            format_rules = """
+        โครงสร้างที่ถูกต้องของเอกสารภาษาไทยทางการ:
+        [วันที่]
+        เรื่อง: [หัวข้อ]
+        เรียน [ชื่อผู้รับ/ตำแหน่ง]
+        [เนื้อหา]
+        ขอแสดงความนับถือ
+        [ชื่อผู้ส่ง] ← อยู่ด้านล่างสุดเท่านั้น
+        """
+
         prompt_text = f"""
-    คุณคือผู้เชี่ยวชาญด้านงานเอกสารและการใช้ภาษาญี่ปุ่นในโรงงานไม้ (Timber Industry)
-    ภารกิจของคุณคือ: เขียนหรือปรับปรุงเอกสารภาษาญี่ปุ่นตามข้อมูลที่ได้รับ
-    
-    วันที่: {date_val}
-    ประเภทเอกสารที่ต้องการ: {doc_type}
-    ผู้รับสาร: {recipient}
-    
-    ข้อมูลหลักจากผู้ใช้:
-    {context_str}
-    
-    {"[โหมดปรับปรุงเอกสารเดิม]" if not topic and reference_text else ""}
-    
-    {f"[สำคัญ: มีไฟล์แนบขื่อ {ref_file.filename}] ให้เพิ่มประโยคภาษาญี่ปุ่นแจ้งผู้รับว่ามีไฟล์แนบมาด้วย (เช่น 「詳細は添付ファイルをご参照ください」)" if is_file_attached and doc_type == "email" else ""}
-    
-    รายละเอียดและข้อกำหนด:
-    1. ใช้ภาษาญี่ปุ่นระดับที่เหมาะสม (Keigo หากส่งหาหัวหน้า/ลูกค้า) 
-    2. ระบุวันที่ {date_val} ลงในเอกสารให้ถูกต้องตามธรรมเนียมญี่ปุ่น (ห้ามข้าม)
-    3. หากเป็นโหมดปรับปรุงเอกสารเดิม: ให้เน้นการแก้ไวยากรณ์ การเลือกใช้คำที่สุภาพขึ้น และการจัด Format ให้เป็นระเบียบตามประเภทเอกสารที่เลือก **โดยห้ามตัดทอนข้อมูล (Do NOT summarize) และต้องรักษาเนื้อหาเดิมเอาไว้ให้ครบถ้วนที่สุดทุกประเด็น**
-    4. หากเป็นใบลา (Leave Request): ใช้แพทเทิร์นที่เป็นมาตรฐานและสุภาพที่สุด
-    5. ใช้คำศัพท์เฉพาะพนักงานโรงงานไม้ (เช่น プレカット, 木材, 寸法) หากเนื้อหามีการกล่าวถึง
-    6. จัดรูปแบบเอกสารให้สมบูรณ์ (คำขึ้นต้น, เนื้อหา, คำลงท้าย)
-    7. หากเป็นรายงานรายสัปดาห์ (Weekly Report): จัดเป็นหัวข้อที่อ่านง่าย (Key progress, Next steps) **แต่ต้องนำข้อมูลจากต้นฉบับมาใส่ให้ครบ ห้ามย่อเป็นสรุปสั้นๆ**
-    8. **หากมีข้อมูลอ้างอิงจากไฟล์ และเป็นประเภทอีเมล: ให้เขียนระบุในเนื้อหาว่ามีไฟล์แนบมาด้วยให้ชัดเจน**
-    9. **ข้อสำคัญ: ห้ามใช้สัญลักษณ์ Markdown เช่น **หนา**, ### หัวข้อ หรือ --- เส้นคั่น ให้ใช้การเว้นวรรคและขึ้นบรรทัดใหม่ในการแบ่งหัวข้อแทน เพื่อให้ผู้ใช้นำไปวางใน Word ได้ทันทีโดยไม่ต้องลบจุดเหล่านี้**
-    
-    ตอบกลับเฉพาะ "เนื้อหาเอกสารภาษาญี่ปุ่น" เท่านั้น (ไม่ต้องมีคำนำ/สรุปภาษาไทย)
-    """
-        
+        คุณคือผู้ช่วยร่างเอกสารธุรกิจระดับมืออาชีพ
+        ภารกิจ: ร่าง {doc_type_display}
+
+        ข้อมูลเอกสาร:
+        {date_line}
+        ประเภทผู้รับ: {recipient}
+        {recipient_name_line}
+        {sender_line}
+
+        เนื้อหา/วัตถุประสงค์:
+        {context_str}
+
+        ข้อกำหนด:
+        1. ร่างเอกสารเป็น {target_lang} เท่านั้น ห้ามตอบกลับภาษาอื่น
+        2. ใช้คำพูดระดับ Keigo (ภาษาสุภาพธุรกิจ) — ห้ามใช้คำ casual หรือ informal
+        3. ถ้ามีชื่อผู้รับ ให้ใช้ชื่อจริง ห้ามใช้ [ชื่อ] หรือ [Placeholder] แทนชื่อ
+        {format_rules}
+
+        คำเตือน: ตอบกลับเฉพาะเนื้อหาเอกสารเพียวๆ ห้ามมีคำนำ เช่น 'นี่คือร่างเอกสาร' หรือ 'ต่อไปนี้คือ...' นำหน้า
+        """
+
+
+
+
         result = call_gemini_api(prompt_text)
+
         
+
         if isinstance(result, dict) and "error" in result:
+
             status_code = 429 if "429" in str(result.get("error")) else 500
+
             return jsonify(result), status_code
+
             
+
         return jsonify({"result": result.strip() if result else ""})
 
+
+
     except Exception as e:
+
         return jsonify({"error": f"Internal Error: {str(e)}"}), 500
 
+
+
 @app.route('/search_glossary', methods=['POST'])
+
 def search_glossary():
+
     try:
+
         data = request.json
+
         term = data.get('term', '')
 
+
+
         if not term:
+
              return jsonify({"error": "กรุณาระบุคำศัพท์"})
 
-        # ปรับจูน Prompt ให้รองรับมุมมองเจ้าของภาษา (Mother-Tongue Perspective)
+
+
         ui_lang = data.get('ui_lang', 'th')
-        target_explain = "ภาษาไทย" if ui_lang == "th" else "ภาษาญี่ปุ่น"
+
+        if ui_lang == 'th':
+
+            explain_lang = "อธิบายความหมายด้วยคำง่ายๆ เป็นภาษาไทย 1 บรรทัด"
+
+        else:
+
+             explain_lang = "อธิบายความหมายด้วยคำง่ายๆ เป็นภาษาญี่ปุ่น (Japanese) 1 บรรทัด"
+
+
 
         prompt_text = f"""
-        คุณคือพจนานุกรมอัจฉริยะ (Thai ↔ Japanese) ที่เชี่ยวชาญด้านอุตสาหกรรมไม้ (Timber Industry)
-        และมีความเข้าใจลึกซึ้งในมุมมองของผู้ใช้งาน (User-Centric Perspective)
+
+        คุณคือพจนานุกรมคำศัพท์เทคนิคอุตสาหกรรมไม้ (เครื่องจักร, งานไม้, ออฟฟิศและบริหารโรงงาน)
+
+        คำที่ต้องการค้นหา: "{term}"
+
+
+
+        ภารกิจ: แปลคำนี้สลับภาษา (ไทย ↔ ญี่ปุ่น) พร้อมยกตัวอย่าง
+
         
-        ข้อมูลผู้ใช้งาน:
-        - คำค้นหา (Search Term): "{term.replace('"', '\\"')}"
-        - ภาษาเมนูที่ผู้ใช้ใช้ (UI Language): {ui_lang}
-        - ภาษาที่ต้องใช้ในการอธิบาย (Definition Language): {target_explain}
-        
-        กฎการทำงาน (Rules):
-        1. **การวิเคราะห์ภาษา**: ตรวจสอบว่า "{term}" คือภาษาอะไร
-        2. **คำแปลเป้าหมาย (term_target)**: ต้องเป็นคำแปลที่มีความหมายเดียวกับ "{term}" ใน "อีกภาษาหนึ่ง" เสมอ
-        3. **การอธิบาย (definition)**: ต้องอธิบายความหมายเป็น "{target_explain}" เท่านั้น (เพื่อความเข้าใจลึกซึ้งของผู้ใช้งาน)
-        4. **คำศัพท์เทคนิค**: หากเป็นคำย่อหรือคำเทคนิคไม้ (เช่น Mat_Width, KAK, BZI) ให้ขยายความหมายตามมาตรฐานโรงเลื่อย/โรงงานไม้
-        5. **สำคัญมาก**: ใช้ JSON Format และต้องหนีสัญลักษณ์เครื่องหมายคู่ (") ด้วย \\" และใช้ \\n สำหรับการขึ้นบรรทัดใหม่
-        
-        ตอบกลับเป็น JSON ดังนี้:
+
+        ตอบกลับเป็น JSON เท่านั้น (หนีสัญลักษณ์เครื่องหมายคู่ (") ด้วย \" และใช้ \n สำหรับขึ้นบรรทัดใหม่):
+
         {{
+
             "term_main": "คำค้นหาต้นฉบับ",
-            "term_target": "คำแปลในอีกภาษา",
-            "reading": "คำอ่าน (Romaji/Furigana)",
-            "definition": "คำอธิบายความหมายโดยละเอียด",
-            "example_jp": "ตัวอย่างประโยคญี่ปุ่น",
-            "example_th": "ตัวอย่างประโยคไทย"
+
+            "term_target": "คำแปลเป้าหมายที่ดีที่สุด 1 คำ",
+
+            "reading": "คำอ่านของคำศัพท์ (Romaji สำหรับภาษาไทย, หรือ Hiragana สำหรับภาษาญี่ปุ่น เริ่มด้วยวงเล็บ [ ])",
+
+            "definition": "{explain_lang}",
+
+            "example_jp": "ตัวอย่างการแต่งประโยคในที่ทำงานภาษาญี่ปุ่น",
+
+            "example_th": "ตัวอย่างประโยคแปลไทย"
+
         }}
+
         """
 
-        result = call_gemini_api(prompt_text)
+
+
+        result = call_gemini_api(prompt_text, require_json=True)
+
         
+
         if isinstance(result, dict) and "error" in result:
+
             status_code = 429 if "429" in str(result.get("error")) else 500
+
             return jsonify(result), status_code
 
+
+
         parsed_data = try_extract_json(result)
+
         if parsed_data:
+
             return jsonify(parsed_data)
+
         else:
-            return jsonify({"error": "ไม่สามารถประมวลผลคำศัพท์ได้ครับ", "ai_response": result}), 500
+
+            return jsonify({"error": "ไม่สามารถแปลงรูปแบบพจนานุกรมได้ครับ", "ai_response": str(result)[:50]}), 500
+
+
 
     except Exception as e:
+
         return jsonify({"error": str(e)})
+
+
 
 @app.route('/analyze_politeness', methods=['POST'])
+
+
+
 def analyze_politeness():
+
     try:
+
         data = request.json
+
         text = data.get('text', '')
+
         recipient = data.get('recipient', 'ทั่วไป')
 
+
+
         if not text:
+
              return jsonify({"error": "กรุณาระบุข้อความ"})
 
+
+
         ui_lang = data.get('ui_lang', 'th')
-        explain_lang = "ภาษาไทย" if ui_lang == "th" else "ภาษาญี่ปุ่น (Japanese)"
 
-        prompt_text = f"""
-        คุณคือผู้เชี่ยวชาญด้านภาษาญี่ปุ่นและระดับความสุภาพ (Keigo) อ้างอิงมาตรฐาน Bunkacho
-        จงวิเคราะห์ประโยคนี้: "{text.replace('"', '\\"')}"
-        สำหรับผู้รับสารที่เป็น: "{recipient}"
-        
-        ตอบกลับมาเป็น JSON (หนีสัญลักษณ์เครื่องหมายคู่ (") ด้วย \\" และใช้ \\n สำหรับขึ้นบรรทัดใหม่):
-        {{
-            "original_text": "{text}",
-            "analysis": "วิเคราะห์ข้อผิดพลาดหรือจุดที่ควรปรับปรุง (เขียนด้วย{explain_lang})",
-            "suggestion": "ประโยคที่แนะนำให้ใช้ (ภาษาญี่ปุ่น)",
-            "explanation": "คำอธิบายไวยากรณ์และความสุภาพ (เขียนด้วย{explain_lang})"
-        }}
-        """
+        if ui_lang == 'th':
 
-        result = call_gemini_api(prompt_text)
-        
-        if isinstance(result, dict) and "error" in result:
-            status_code = 429 if "429" in str(result.get("error")) else 500
-            return jsonify(result), status_code
-            
-        parsed_data = try_extract_json(result)
-        if parsed_data:
-            return jsonify(parsed_data)
+            system_role = "คุณคือผู้เชี่ยวชาญด้านภาษาญี่ปุ่นและระดับความสุภาพ (Keigo) อ้างอิงมาตรฐาน Bunkacho"
+
+            explain_lang = "ภาษาไทย"
+
+            target_lang = "ภาษาญี่ปุ่น"
+
         else:
+
+            system_role = "คุณคือผู้เชี่ยวชาญด้านภาษาไทยและมารยาททางสังคม รวมถึงระดับความสุภาพ (เช่น การใช้หางเสียง ครับ/ค่ะ) อ้างอิงบริบทการทำงานในบริษัท"
+
+            explain_lang = "ภาษาญี่ปุ่น (Japanese)"
+
+            target_lang = "ภาษาไทย"
+
+
+
+        prompt_text = f'''
+
+        {system_role}
+
+        จงวิเคราะห์ประโยคนี้: "{text.replace('"', '\"')}"
+
+        สำหรับผู้รับสารที่เป็น: "{recipient}"
+
+        
+
+        ตอบกลับมาเป็น JSON (หนีสัญลักษณ์เครื่องหมายคู่ (") ด้วย \" และใช้ \n สำหรับขึ้นบรรทัดใหม่):
+
+        {{
+
+            "original_text": "{text}",
+
+            "analysis": "วิเคราะห์ข้อผิดพลาดหรือจุดที่ควรปรับปรุง (เขียนอธิบายด้วย{explain_lang}ให้ชัดเจน)",
+
+            "suggestion": "ประโยคที่แนะนำให้ใช้ที่ถูกต้องและสุภาพ ({target_lang})",
+
+            "explanation": "คำอธิบายไวยากรณ์และความสุภาพเพิ่มเติม (เขียนอธิบายด้วย{explain_lang})"
+
+        }}
+
+        '''
+
+
+
+        result = call_gemini_api(prompt_text, require_json=True)
+
+        
+
+        if isinstance(result, dict) and "error" in result:
+
+            status_code = 429 if "429" in str(result.get("error")) else 500
+
+            return jsonify(result), status_code
+
+            
+
+        parsed_data = try_extract_json(result)
+
+        if parsed_data:
+
+            return jsonify(parsed_data)
+
+        else:
+
             return jsonify({"error": "ไม่สามารถวิเคราะห์ความสุภาพได้ครับ", "ai_response": str(result)}), 500
 
-    except Exception as e:
-        return jsonify({"error": str(e)})
 
-@app.route('/vision_ocr', methods=['POST'])
-def vision_ocr():
-    try:
-        if 'image' not in request.files:
-            return jsonify({"error": "ไม่พบไฟล์รูปภาพ"})
-        
-        image_file = request.files['image']
-        image_data = image_file.read()
-        base64_image = base64.b64encode(image_data).decode('utf-8')
-        mime_type = image_file.mimetype 
-
-        if mime_type == 'application/octet-stream':
-            guessed_type, _ = mimetypes.guess_type(image_file.filename)
-            if guessed_type:
-                mime_type = guessed_type
-
-        image_part = {
-            "mime_type": mime_type,
-            "data": base64_image
-        }
-
-        prompt_text = """
-        ดูรูปภาพนี้แล้ว:
-        1. ถอดข้อความภาษาญี่ปุ่นที่อยู่ในภาพออกมา (OCR) - เน้นฉลากสินค้าหรือเอกสารหน้างาน
-        2. แปลข้อความเป็นภาษาไทย
-        3. สรุปใจความสำคัญสั้นๆ
-        
-        ตอบกลับมาเป็น JSON เท่านั้น (หนีสัญลักษณ์เครื่องหมายคู่ (") ด้วย \\" และใช้ \\n สำหรับขึ้นบรรทัดใหม่):
-        {
-            "original_text": "ข้อความภาษาญี่ปุ่นที่ถอดได้",
-            "translated_text": "คำแปลภาษาไทย",
-            "summary": "สรุปสั้นๆ สำหรับคนทำงาน"
-        }
-        """
-
-        result = call_gemini_api(prompt_text, is_vision=True, image_data=image_part)
-        
-        if isinstance(result, dict) and "error" in result:
-            status_code = 429 if "429" in str(result.get("error")) else 500
-            return jsonify(result), status_code
-
-        parsed_data = try_extract_json(result)
-        if parsed_data:
-            return jsonify(parsed_data)
-        else:
-            return jsonify({"error": "ไม่สามารถอ่านรูปภาพได้ครับ", "ai_response": result}), 500
 
     except Exception as e:
+
         return jsonify({"error": str(e)})
+
+
+
+
 
 if __name__ == '__main__':
+
     app.run(debug=True)

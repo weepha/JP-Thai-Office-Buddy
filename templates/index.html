@@ -15,6 +15,7 @@
 
     <!-- CSS & Fonts -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Sarabun:wght@300;400;600&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -134,6 +135,10 @@
             animation: fadeIn 0.5s ease-out;
         }
 
+        button[aria-expanded="true"] .toggle-icon {
+            transform: rotate(180deg);
+        }
+
         .lang-switcher {
             position: absolute;
             top: 25px;
@@ -185,6 +190,44 @@
             margin-bottom: 8px;
             padding-left: 5px;
         }
+
+        /* Toast & Animations */
+        .toast-container {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 1050;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            pointer-events: none;
+        }
+        .toast-notification {
+            background: var(--primary);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-weight: 600;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .toast-notification.show {
+            opacity: 1;
+            transform: translateY(0);
+            pointer-events: auto;
+        }
+        .btn, .nav-link, .result-box, .lang-badge-container {
+            transition: all 0.25s ease;
+        }
+        .btn:active {
+            transform: scale(0.95) !important;
+        }
     </style>
 </head>
 <body>
@@ -213,7 +256,7 @@
                             <button class="nav-link" data-bs-toggle="pill" data-bs-target="#docs" id="ui-tab-docs">ร่างรายงาน/Email</button>
                         </li>
                         <li class="nav-item">
-                            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#glossary" id="ui-tab-glossary">คลังศัพท์ไม้</button>
+                            <button class="nav-link" data-bs-toggle="pill" data-bs-target="#glossary" id="ui-tab-glossary">คลังศัพท์เทคนิค</button>
                         </li>
                         <li class="nav-item">
                             <button class="nav-link" data-bs-toggle="pill" data-bs-target="#polite" id="ui-tab-polite">ตรวจความสุภาพ</button>
@@ -224,27 +267,45 @@
                         <!-- 1. Translation Tab -->
                         <div class="tab-pane fade show active" id="translate">
                             <div class="d-flex align-items-center mb-3">
-                                <div id="ui-trans-title-container" class="lang-badge-container" onclick="toggleTransMode()" title="คลิกเพื่อสลับทิศทางแปล / Click to swap direction">
-                                    <span class="lang-chip th">🇹🇭 ไทย</span>
-                                    <span class="lang-sep">↔</span>
-                                    <span class="lang-chip jp">🇯🇵 日本語</span>
+                                                                                                <div id="ui-trans-title-container" class="mb-2 text-primary fw-bold" style="font-size: 0.95rem;">
+                                    💡 พิมพ์ข้อความภาษาไทย หรือ ภาษาญี่ปุ่นก็ได้ (ระบบจะแปลสลับภาษาให้อัตโนมัติ)
                                 </div>
                             </div>
                             <div class="mb-3">
-                                <textarea class="form-control" id="thaiInput" rows="3" placeholder="พิมพ์ข้อความที่ต้องการแปล..." oninput="validateLanguage()"></textarea>
-                                <div id="ui-trans-warning" class="validate-warning">⚠️ กรุณาพิมพ์ภาษาไทยเพื่อให้แปลแม่นยำที่สุด</div>
+                                <textarea class="form-control" id="thaiInput" rows="3" placeholder="พิมพ์ข้อความที่ต้องการแปล..."></textarea>
+                                
+                            </div>
+                            
+                            <!-- โหมดกรองระดับภาษา -->
+                            <div class="mb-3 p-2 bg-light rounded text-start" style="border: 1px dashed #dee2e6;">
+                                <label class="form-label text-secondary small fw-bold mb-1 d-block"><i class="bi bi-sliders"></i> <span id="ui-trans-mode-label">รูปแบบการแปล</span></label>
+                                <div class="d-flex flex-wrap gap-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="transModeOpt" id="transModeRead" value="read" checked>
+                                        <label class="form-check-label small" for="transModeRead" id="ui-trans-mode-read">
+                                            แปลเพื่ออ่านความหมาย (1 ระดับ)
+                                        </label>
+                                    </div>
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="radio" name="transModeOpt" id="transModeDraft" value="draft">
+                                        <label class="form-check-label small" for="transModeDraft" id="ui-trans-mode-draft">
+                                            แปลสำหรับแต่งประโยค (3 ระดับ)
+                                        </label>
+                                    </div>
+                                </div>
                             </div>
                             <button onclick="runAction('/translate', 'translate')" class="btn btn-gradient w-100" id="btnTranslate">
                                 <span class="spinner-border spinner-border-sm loading-spinner"></span> <span id="ui-btn-translate">แปลภาษาทันที</span>
                             </button>
                             
                             <div id="resTranslate" class="mt-4" style="display:none;">
-                                <div class="row g-3">
+                                <!-- โหมดแต่งประโยค (3 ระดับ) -->
+                                <div id="resTranslateDraft" class="row g-3">
                                     <div class="col-md-4">
                                         <div class="result-box h-100 d-flex flex-column">
                                             <div class="d-flex justify-content-between align-items-center mb-2">
                                                 <h6 id="ui-res-cas" class="mb-0">Casual / General</h6>
-                                                <button class="btn btn-sm btn-link p-0 text-primary" onclick="copyText('resCas')">📋 <span id="ui-btn-copy-1">Copy</span></button>
+                                                <button class="btn btn-sm btn-link p-0 text-primary" onclick="copyText('resCas')"><i class='bi bi-clipboard'></i> <span id="ui-btn-copy-1">Copy</span></button>
                                             </div>
                                             <p id="resCas" class="fw-bold text-primary mb-0"></p>
                                         </div>
@@ -253,7 +314,7 @@
                                         <div class="result-box h-100 d-flex flex-column">
                                             <div class="d-flex justify-content-between align-items-center mb-2">
                                                 <h6 id="ui-res-pol" class="mb-0">Polite</h6>
-                                                <button class="btn btn-sm btn-link p-0 text-success" onclick="copyText('resPol')">📋 <span id="ui-btn-copy-2">Copy</span></button>
+                                                <button class="btn btn-sm btn-link p-0 text-success" onclick="copyText('resPol')"><i class='bi bi-clipboard'></i> <span id="ui-btn-copy-2">Copy</span></button>
                                             </div>
                                             <p id="resPol" class="fw-bold text-success mb-0"></p>
                                         </div>
@@ -262,9 +323,22 @@
                                         <div class="result-box h-100 d-flex flex-column">
                                             <div class="d-flex justify-content-between align-items-center mb-2">
                                                 <h6 id="ui-res-bus" class="mb-0">Business / Formal</h6>
-                                                <button class="btn btn-sm btn-link p-0 text-dark" onclick="copyText('resBus')">📋 <span id="ui-btn-copy-3">Copy</span></button>
+                                                <button class="btn btn-sm btn-link p-0 text-dark" onclick="copyText('resBus')"><i class='bi bi-clipboard'></i> <span id="ui-btn-copy-3">Copy</span></button>
                                             </div>
                                             <p id="resBus" class="fw-bold text-dark mb-0"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- โหมดเพื่ออ่าน (1 ระดับกว้างๆ) -->
+                                <div id="resTranslateRead" class="row g-3" style="display:none;">
+                                    <div class="col-12">
+                                        <div class="result-box h-100 d-flex flex-column pointer-cursor" style="border-left: 5px solid var(--primary); background: #ffffff;">
+                                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                                <h6 id="ui-res-read-title" class="mb-0 fw-bold text-primary"><i class="bi bi-translate"></i> ผลการแปล / 翻訳結果</h6>
+                                                <button class="btn btn-sm btn-link p-0 text-primary" onclick="copyText('resRead')"><i class='bi bi-clipboard'></i> <span id="ui-btn-copy-read">Copy</span></button>
+                                            </div>
+                                            <p id="resRead" class="fw-bold mb-0 text-dark" style="font-size: 1.1rem; line-height: 1.6; padding: 10px;"></p>
                                         </div>
                                     </div>
                                 </div>
@@ -273,13 +347,37 @@
 
                         <!-- 2. Documentation Tab -->
                         <div class="tab-pane fade" id="docs">
-                            <h4 class="mb-3" id="ui-docs-title">📝 ระบบร่างเอกสารอัตโนมัติ</h4>
+                            <h4 class="mb-3" id="ui-docs-title"><i class='bi bi-journal-text text-primary'></i> ระบบร่างเอกสารอัตโนมัติ</h4>
                             <div class="row g-3 mb-3">
                                 <div class="col-md-12">
                                     <label class="form-label" id="ui-docs-label-date">วันที่เอกสาร</label>
                                     <input type="date" class="form-control border-0 bg-light p-3" id="docDate">
                                 </div>
                             </div>
+                            
+                            <!-- ชื่อผู้ส่ง/ผู้รับ Collapsible -->
+                            <div class="mb-3 border border-1 border-primary-subtle rounded-4 overflow-hidden bg-white shadow-sm transition-all">
+                                <button class="btn w-100 text-start p-3 fw-bold text-primary d-flex justify-content-between align-items-center" type="button"
+                                    data-bs-toggle="collapse" data-bs-target="#senderRecipientSection"
+                                    aria-expanded="false" aria-controls="senderRecipientSection" id="ui-docs-btn-names"
+                                    style="border-radius: 0; background-color: var(--light);">
+                                    <span style="font-size: 0.95rem;"><i class="bi bi-person-lines-fill me-2"></i><span id="ui-docs-label-names">➕ ระบุชื่อผู้ส่ง / ผู้รับ (Optional)</span></span>
+                                    <i class="bi bi-chevron-down toggle-icon" style="transition: transform 0.3s ease;"></i>
+                                </button>
+                                <div class="collapse" id="senderRecipientSection">
+                                    <div class="row g-3 p-3 pt-2 bg-white">
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold small text-primary" id="ui-docs-label-sender"><i class="bi bi-person-fill"></i> ชื่อผู้ส่ง</label>
+                                            <input type="text" class="form-control bg-light p-3 topic-field" data-key="ชื่อผู้ส่ง (Sender)" id="docSender" placeholder="เช่น ฉัน, สมชาย หรือเว้นว่างไว้">
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-bold small text-primary" id="ui-docs-label-rec-name"><i class="bi bi-person-badge-fill"></i> ชื่อผู้รับเป้าหมาย</label>
+                                            <input type="text" class="form-control bg-light p-3 topic-field" data-key="ชื่อผู้รับเจาะจง (Recipient Name)" id="docRecipientName" placeholder="เช่น คุณทาคาฮาชิ (高橋様)">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <div class="row g-3">
                                 <div class="col-md-4">
                                     <label class="form-label" id="ui-docs-label-category">หมวดหมู่เอกสาร</label>
@@ -315,7 +413,7 @@
                                         <span id="docFileName" class="small text-muted">ยังไม่ได้เลือกไฟล์</span>
                                         <input type="file" id="docFile" style="display:none" onchange="updateFileName(this, 'docFileName')">
                                     </div>
-                                     <p class="small text-info mt-2 mb-0" id="ui-docs-hint">💡 ระบุข้อมูลได้โดยการพิมพ์ หรือแนบไฟล์อ้างอิง (หรือใส่ทั้งสองอย่างได้) เพื่อให้ AI ช่วยร่างเอกสารได้ทันทีครับ</p>
+                                     <p class="small text-info mt-2 mb-0" id="ui-docs-hint"><i class='bi bi-lightbulb-fill text-warning'></i> ระบุข้อมูลได้โดยการพิมพ์ หรือแนบไฟล์อ้างอิง (หรือใส่ทั้งสองอย่างได้) เพื่อให้ AI ช่วยร่างเอกสารได้ทันทีครับ</p>
                                 </div>
                             </div>
                             <button onclick="runAction('/generate_doc', 'docs')" class="btn btn-gradient w-100 mt-3" id="btnDocs">
@@ -324,14 +422,14 @@
                             <div id="resDocsArea" class="mt-4" style="display:none;">
                                 <div class="result-box bg-white shadow-sm p-4">
                                     <div class="d-flex justify-content-between align-items-center mb-3">
-                                        <h5 class="mb-0 text-primary">✨ <span id="ui-res-docs-title">Generated Result</span></h5>
+                                        <h5 class="mb-0 text-primary"><i class='bi bi-stars text-warning'></i> <span id="ui-res-docs-title">Generated Result</span></h5>
                                         <div class="d-flex gap-2">
-                                            <button class="btn btn-sm btn-outline-primary" onclick="copyText('resDocs')">📋 <span id="ui-btn-copy-docs">Copy</span></button>
-                                            <button class="btn btn-sm btn-outline-success" id="btnSaveWord" onclick="downloadDoc()">💾 <span id="ui-btn-save-docs">Save Word</span></button>
-                                            <button class="btn btn-sm btn-outline-danger" id="btnSavePDF" onclick="downloadPDF()">📕 <span id="ui-btn-save-pdf">Save PDF</span></button>
-                                            <button class="btn btn-sm btn-outline-secondary" id="btnSaveTXT" onclick="downloadTXT()">📄 <span id="ui-btn-save-txt">Save TXT</span></button>
-                                            <button class="btn btn-sm btn-outline-info" onclick="verifyJapanese()">🔍 <span id="ui-btn-verify-docs">Check in Thai</span></button>
-                                            <button class="btn btn-sm btn-gradient py-1" id="btnEmailSend" style="display:none;" onclick="sendEmail()">📧 <span id="ui-btn-send-email">Send Email</span></button>
+                                            <button class="btn btn-sm btn-outline-primary" onclick="copyText('resDocs')"><i class='bi bi-clipboard'></i> <span id="ui-btn-copy-docs">Copy</span></button>
+                                            
+                                            <button class="btn btn-sm btn-outline-danger" id="btnSavePDF" onclick="downloadPDF()"><i class='bi bi-file-pdf text-danger'></i> <span id="ui-btn-save-pdf">Save PDF</span></button>
+                                            
+                                            <button class="btn btn-sm btn-outline-info" onclick="verifyJapanese()"><i class='bi bi-search text-info'></i> <span id="ui-btn-verify-docs">Check in Thai</span></button>
+                                            <button class="btn btn-sm btn-gradient py-1" id="btnEmailSend" style="display:none;" onclick="sendEmail()"><i class='bi bi-envelope text-primary'></i> <span id="ui-btn-send-email">Send Email</span></button>
                                         </div>
                                     </div>
                                     <pre id="resDocs" style="white-space: pre-wrap; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; font-size: 1.1rem; line-height: 1.6; color: #2c3e50; border: 1px dashed #eee; padding: 15px; border-radius: 10px;"></pre>
@@ -341,7 +439,7 @@
 
                         <!-- 3. Glossary Tab -->
                         <div class="tab-pane fade" id="glossary">
-                            <h4 class="mb-3" id="ui-glos-title">📚 คลังศัพท์เทคนิค (Timber & Business)</h4>
+                            <h4 class="mb-3" id="ui-glos-title"><i class='bi bi-book text-primary'></i> คลังศัพท์เทคนิค (Timber & Business)</h4>
                             <div class="input-group mb-3 shadow-sm rounded-3 overflow-hidden">
                                 <input type="text" class="form-control p-3 border-0 bg-light" id="termInput" placeholder="Search Timber Terms...">
                                 <button class="btn btn-gradient px-4" onclick="runAction('/search_glossary', 'glossary')" id="btnGlossary">
@@ -365,7 +463,7 @@
 
                         <!-- 5. Politeness Tab -->
                         <div class="tab-pane fade" id="polite">
-                            <h4 class="mb-3" id="ui-polite-title">⚖️ ตรวจระดับความสุภาพ (Keigo Checker)</h4>
+                            <h4 class="mb-3" id="ui-polite-title"><i class='bi bi-scales text-primary'></i> ตรวจระดับความสุภาพ (Keigo Checker)</h4>
                             <div class="mb-3">
                                 <label class="form-label" id="ui-polite-label-text">ประโยคภาษาญี่ปุ่นที่ต้องการตรวจ</label>
                                 <textarea class="form-control border-0 bg-light p-3" id="politeInput" rows="2" placeholder="เช่น: Mizu nomitai..."></textarea>
@@ -385,18 +483,18 @@
                             
                             <div id="resPolite" class="mt-4" style="display:none;">
                                 <div class="result-box mb-3 border-warning">
-                                    <h6 class="text-warning"><i class="bi bi-exclamation-triangle"></i> <span id="ui-polite-res-analysis">จุดที่ควรปรับปรุง:</span></h6>
+                                    <h6 class="text-warning"><i class='bi bi-exclamation-triangle'></i> <span id="ui-polite-res-analysis">จุดที่ควรปรับปรุง:</span></h6>
                                     <p id="politeAnalysis" class="mb-0"></p>
                                 </div>
                                 <div class="result-box mb-3 border-success bg-light">
-                                    <h6 class="text-success"><i class="bi bi-check-circle"></i> <span id="ui-polite-res-suggest">ประโยคที่แนะนำ:</span></h6>
+                                    <h6 class="text-success"><i class='bi bi-check-circle'></i> <span id="ui-polite-res-suggest">ประโยคที่แนะนำ:</span></h6>
                                     <div class="d-flex justify-content-between align-items-center">
                                         <p id="politeSuggest" class="fw-bold fs-5 mb-0 text-primary"></p>
-                                        <button class="btn btn-sm btn-outline-primary" onclick="copyText('politeSuggest')">📋 <span id="ui-btn-copy-polite">คัดลอก</span></button>
+                                        <button class="btn btn-sm btn-outline-primary" onclick="copyText('politeSuggest')"><i class='bi bi-clipboard'></i> <span id="ui-btn-copy-polite">คัดลอก</span></button>
                                     </div>
                                 </div>
                                 <div class="result-box">
-                                    <h6 class="text-muted"><i class="bi bi-info-circle"></i> <span id="ui-polite-res-explain">คำอธิบาย:</span></h6>
+                                    <h6 class="text-muted"><i class='bi bi-info-circle'></i> <span id="ui-polite-res-explain">คำอธิบาย:</span></h6>
                                     <p id="politeExplain" class="mb-0 small"></p>
                                 </div>
                             </div>
@@ -412,19 +510,22 @@
         <div class="modal-dialog modal-lg modal-dialog-centered">
             <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
                 <div class="modal-header bg-gradient text-white" style="border-radius: 20px 20px 0 0;">
-                    <h5 class="modal-title"><i class="bi bi-search"></i> <span id="ui-modal-verify-title">ตรวจสอบเนื้อหา (ภาษาไทย)</span></h5>
+                    <h5 class="modal-title"><i class='bi bi-search'></i> <span id="ui-modal-verify-title">ตรวจสอบเนื้อหา (ภาษาไทย)</span></h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body p-4">
                     <pre id="resDocsThai" style="white-space: pre-wrap; font-family: 'Segoe UI', sans-serif; font-size: 1.05rem; line-height: 1.7; color: #34495e; background: #f8f9fa; padding: 20px; border-radius: 15px; border: 1px solid #e9ecef; max-height: 60vh; overflow-y: auto;"></pre>
                 </div>
                 <div class="modal-footer border-0 p-3 bg-light" style="border-radius: 0 0 20px 20px;">
-                    <button type="button" class="btn btn-outline-primary px-4" onclick="copyText('resDocsThai')">📋 <span id="ui-modal-copy">คัดลอก</span></button>
+                    <button type="button" class="btn btn-outline-primary px-4" onclick="copyText('resDocsThai')"><i class='bi bi-clipboard'></i> <span id="ui-modal-copy">คัดลอก</span></button>
                     <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal" id="ui-modal-close">ปิด</button>
                 </div>
             </div>
         </div>
     </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toastContainer"></div>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
@@ -437,40 +538,48 @@
                 subtitle: "ผู้ช่วย AI สำหรับพนักงานในอุตสาหกรรมไม้ญี่ปุ่น",
                 tab_trans: "แปลภาษาอัจฉริยะ",
                 tab_docs: "ร่างรายงาน/Email",
-                tab_glos: "คลังศัพท์ไม้",
+                tab_glos: "คลังศัพท์เทคนิค",
                 tab_polite: "ตรวจความสุภาพ",
                 trans_ph: "พิมพ์ข้อความที่ต้องการแปลลงที่นี่...",
-                trans_title: '<span class="lang-chip th">🇹🇭 ไทย</span> <span class="lang-sep">↔</span> <span class="lang-chip jp">🇯🇵 日本語</span>',
+                trans_title: '<i class="bi bi-lightbulb-fill text-warning"></i> ระบุข้อความภาษาไทย หรือ ภาษาญี่ปุ่น (ระบบจะจับภาษาอัตโนมัติ)',
                 btn_trans: "แปลภาษาทันที",
                 res_cas: "ทั่วไป / เป็นกันเอง",
                 res_pol: "สุภาพ",
                 res_bus: "ทางธุรกิจ / ทางการ",
-                docs_title: "📝 ระบบร่างเอกสารอัตโนมัติ",
+                trans_mode_label: "เป้าหมายการใช้งาน (Translation Mode):",
+                trans_mode_read: "เน้นอ่านจับใจความ (Read only)",
+                trans_mode_draft: "แตกย่อย 3 ระดับ (For drafting)",
+                docs_title: "<i class='bi bi-journal-text text-primary'></i> ระบบร่างเอกสารอัตโนมัติ",
                 docs_date: "วันที่เอกสาร/วันที่มีผล",
                 docs_label_cat: "หมวดหมู่เอกสาร",
                 docs_type: "ประเภทเอกสารเฉพาะ",
                 docs_recip: "ผู้รับสาร",
                 docs_info: "หัวใจสำคัญ/ข้อมูลดิบ",
                  docs_ph: "ระบุเนื้อหาสำคัญหรือข้อมูลดิบลงที่นี่...",
-                 docs_hint_email: "💡 ระบุข้อมูลเมลได้โดยการพิมพ์ หรือแนบไฟล์อ้างอิง (หรือใส่ทั้งสองอย่างได้) เพื่อให้ AI ช่วยร่างเมลได้ทันทีครับ (หากมีไฟล์แนบ อย่าลืมแนบในเมล์จริงอีกครั้งด้วยนะครับ)",
-                 docs_hint_report: "💡 ระบุข้อมูลรายงานได้โดยการพิมพ์ หรือแนบไฟล์อ้างอิง (หรือใส่ทั้งสองอย่างได้) เพื่อให้ AI ช่วยร่างรายงานได้ทันทีครับ",
-                 docs_hint_admin: "💡 กรอกรายละเอียดเพื่อร่างเอกสารธุรการหรือคำร้องต่างๆ ครับ",
+                 docs_hint_email: "<i class='bi bi-lightbulb-fill text-warning'></i> ระบุข้อมูลเมลได้โดยการพิมพ์ หรือแนบไฟล์อ้างอิง (หรือใส่ทั้งสองอย่างได้) เพื่อให้ AI ช่วยร่างเมลได้ทันทีครับ (หากมีไฟล์แนบ อย่าลืมแนบในเมล์จริงอีกครั้งด้วยนะครับ)",
+                 docs_hint_report: "<i class='bi bi-lightbulb-fill text-warning'></i> ระบุข้อมูลรายงานได้โดยการพิมพ์ หรือแนบไฟล์อ้างอิง (หรือใส่ทั้งสองอย่างได้) เพื่อให้ AI ช่วยร่างรายงานได้ทันทีครับ",
+                 docs_hint_admin: "<i class='bi bi-lightbulb-fill text-warning'></i> กรอกรายละเอียดเพื่อร่างเอกสารธุรการหรือคำร้องต่างๆ ครับ",
                  docs_file: "ข้อมูลอ้างอิงเพิ่มเติม (Optional: Attach reference .txt, .pdf)",
+                docs_sender: "<i class='bi bi-person-fill'></i> ชื่อผู้ส่ง (Optional)",
+                docs_rec_name: "<i class='bi bi-person-badge-fill'></i> ชื่อผู้รับเป้าหมาย (Optional)",
+                docs_sender_ph: "เช่น ฉัน, สมชาย หรือเว้นว่างไว้",
+                docs_rec_name_ph: "เช่น คุณทาคาฮาชิ (高橋様)",
                 btn_docs: "ร่างเอกสารภาษาญี่ปุ่น",
                 opt_cat_reports: "รายงาน (Reports)",
                 opt_cat_emails: "อีเมล (Emails)",
                 opt_cat_admin: "ธุรการ/HR (Admin)",
-                opt_type_weekly: "รายงานรายสัปดาห์ (Weekly Report) ⭐",
+                opt_type_weekly: "รายงานรายสัปดาห์ (Weekly Report)",
                 opt_type_nippou: "รายงานประจำวัน (Daily Report)",
                 opt_type_timber: "รายงานสถานะไม้ (Timber Status)",
-                opt_type_quality: "รายงานเคลมคุณภาพไม้ (Quality Claim) 🪵",
+                opt_type_quality: "รายงานเคลมคุณภาพไม้ (Quality Claim)",
+                opt_type_email_task_done: "อีเมลแจ้งงานเสร็จ (Task Completed)",
+                opt_type_email_action_taken: "อีเมลแจ้งดำเนินการ/จัดส่งให้แล้ว (Action Taken/Sent)",
+                opt_type_leave: "อีเมลแจ้งขอลาหยุด (Leave Notification)",
                 opt_type_email_gen: "อีเมลธุรกิจทั่วไป (General)",
-                opt_type_email_thank: "อีเมลขอบคุณ (Thank You/Orei)",
                 opt_type_email_follow: "อีเมลติดตามงาน (Follow-up)",
-                opt_type_email_ship: "อีเมลแจ้งส่งของ (Shipping Advice)",
-                opt_type_leave: "แจ้งลา (Leave Request) 🤒",
                 opt_type_reimburse: "แจ้งเบิกค่าใช้จ่าย (Reimbursement)",
-                opt_type_joiner: "แนะนำพนักงานใหม่ (New Joiner)",
+                opt_type_request_equip: "แจ้งขอเบิกอุปกรณ์ (Equipment Request)",
+                opt_type_repair: "แจ้งซ่อม/IT Support (Maintenance/IT)",
                 f_work_done: "งานที่ทำเสร็จแล้ว:",
                 f_issues: "ปัญหาที่พบ/สิ่งที่ต้องปรับปรุง:",
                 f_next_week: "แผนงานสัปดาห์หน้า:",
@@ -502,8 +611,15 @@
                 f_pos: "ตำแหน่ง:",
                 f_join_date: "วันที่เริ่มงาน:",
                 f_intro: "แนะนำตัวสั้นๆ:",
-                warn_th: "⚠️ กรุณาพิมพ์ภาษาไทยเพื่อให้แปลแม่นยำที่สุด",
-                warn_jp: "⚠️ 日本語を入力してください (正確な翻訳のため)",
+                f_task_name: "ชื่องาน/โปรเจกต์ที่เสร็จ:",
+                f_sent_item: "สิ่งที่ส่ง/ดำเนินการให้:",
+                f_remark: "หมายเหตุเพิ่มเติม:",
+                f_equip_name: "ชื่ออุปกรณ์ที่ต้องการเบิก:",
+                f_equip_reason: "เหตุผลความจำเป็น:",
+                f_issue_desc: "รายละเอียดปัญหา/อาการเสีย:",
+                f_issue_impact: "ผลกระทบต่อการทำงาน:",
+                warn_th: "<i class='bi bi-exclamation-triangle-fill text-warning'></i> กรุณาพิมพ์ภาษาไทยเพื่อให้แปลแม่นยำที่สุด",
+                warn_jp: "<i class='bi bi-exclamation-triangle-fill text-warning'></i> 日本語を入力してください (正確な翻訳のため)",
                 opt_rec_mgr: "หัวหน้า (Manager)",
                 opt_rec_sen: "รุ่นพี่ / Mentor",
                 opt_rec_cli: "ลูกค้า (Client)",
@@ -511,14 +627,17 @@
                 opt_rec_gen: "บุคคลทั่วไป",
                 btn_file: "เลือกไฟล์",
                 no_file: "ยังไม่ได้เลือกไฟล์",
-                glos_title: "📚 คลังศัพท์เทคนิค (Thai ↔ Japanese)",
+                docs_names: "➕ ระบุชื่อผู้ส่ง / ผู้รับ (Optional)",
+                docs_sender: "<i class='bi bi-person-fill'></i> ชื่อผู้ส่ง",
+                docs_sender_ph: "เช่น ฉัน, สมชาย หรือเว้นว่างไว้",
+                docs_rec_name: "<i class='bi bi-person-badge-fill'></i> ชื่อผู้รับเป้าหมาย",
+                docs_rec_name_ph: "เช่น คุณทาคาฮาชิ (高橋様)",
+                glos_title: "<i class='bi bi-book text-primary'></i> คลังศัพท์เทคนิค",
                 glos_ph: "พิมพ์คำศัพท์ (ไทย หรือ ญี่ปุ่น)...",
                 glos_btn: "ค้นหา",
                 glos_ex: "ตัวอย่างการใช้:",
                 btn_copy: "คัดลอก",
-                btn_save_doc: "บันทึก Word",
                 btn_save_pdf: "บันทึก PDF",
-                btn_save_txt: "บันทึก TXT",
                 btn_send_email: "ส่งอีเมล",
                 btn_verify: "เช็คความถูกต้อง (ไทย)",
                 verify_title: "ตรวจสอบเนื้อหา (ภาษาไทย):",
@@ -526,7 +645,7 @@
                 modal_close: "ปิดหน้าต่าง",
                 res_docs_title: "ผลการร่างเอกสาร",
                 tab_polite: "ตรวจความสุภาพ",
-                polite_title: "⚖️ ตรวจระดับความสุภาพ (Keigo Checker)",
+                polite_title: "<i class='bi bi-scales text-primary'></i> ตรวจระดับความสุภาพ (Keigo Checker)",
                 polite_label_text: "ประโยคภาษาญี่ปุ่นที่ต้องการตรวจ",
                 polite_label_rec: "ผู้รับสาร (Recipient)",
                 polite_ph: "เช่น: Mizu nomitai...",
@@ -547,33 +666,40 @@
                 tab_glos: "木材用語集",
                 tab_polite: "敬語チェック",
                 trans_ph: "翻訳したいテキストを入力してください...",
-                trans_title: '<span class="lang-chip jp">🇯🇵 日本語</span> <span class="lang-sep">↔</span> <span class="lang-chip th">🇹🇭 ไทย</span>',
+                trans_title: '<i class="bi bi-lightbulb-fill text-warning"></i> タイ語または日本語を入力してください（言語を自動検出）',
                 btn_trans: "今すぐ翻訳",
                 res_cas: "カジュアル / 一般",
                 res_pol: "丁寧",
-                res_bus: "ビジネス / 敬語",
-                docs_title: "📝 自動書類作成システム",
+                                res_bus: "ビジネス / 敬語",
+                trans_mode_label: "翻訳の目的 (Purpose):",
+                trans_mode_read: "意味を理解するだけ (Read only)",
+                trans_mode_draft: "返信用に3つの表現を比較 (Drafting)",
+                docs_title: "<i class='bi bi-journal-text text-primary'></i> 自動書類作成システム",
                 docs_date: "日付 / 適用日",
                 docs_label_cat: "書類の品目",
                 docs_type: "詳細の書類種類",
                 docs_recip: "宛先",
                 docs_info: "主要な内容 / 生データ",
                 docs_ph: "主要な内容や生データをここに入力してください...",
-                docs_hint_email: "💡 テキスト入力またはファイル添付のいずれかを元に、AIがメールを起案します（添付ファイルがある場合は、メーラー側で再度添付してください）。",
-                 docs_hint_report: "💡 テキスト入力またはファイル添付のいずれか（または両方）を元に、AIが報告書を起案・構成します。",
+                docs_hint_email: "<i class='bi bi-lightbulb-fill text-warning'></i> テキスト入力またはファイル添付のいずれかを元に、AIがメールを起案します（添付ファイルがある場合は、メーラー側で再度添付してください）。",
+                 docs_hint_report: "<i class='bi bi-lightbulb-fill text-warning'></i> テキスト入力またはファイル添付のいずれか（または両方）を元に、AIが報告書を起案・構成します。",
                 docs_file: "参考資料（任意投稿 .txt, .pdf）",
+                docs_sender: "<i class='bi bi-person-fill'></i> 差出人名 (Optional)",
+                docs_rec_name: "<i class='bi bi-person-badge-fill'></i> 宛名 (Optional)",
+                docs_sender_ph: "例：ソムチャイ または 営業部",
+                docs_rec_name_ph: "例：高橋様 または お客様",
                 btn_docs: "書類を作成する",
                 opt_cat_reports: "報告書 (Reports)",
                 opt_cat_emails: "メール (Emails)",
                 opt_cat_admin: "総務/HR (Admin)",
-                opt_type_weekly: "週報 (Weekly Report) ⭐",
+                opt_type_weekly: "週報 (Weekly Report)",
                 opt_type_nippou: "日報 (Daily Report)",
                 opt_type_timber: "木材ステータス報告 (Timber Status)",
-                opt_type_quality: "品質クレーム (Quality Claim) 🪵",
+                opt_type_quality: "品質クレーム (Quality Claim)",
+                opt_type_email_task_done: "作業完了報告 (Task Completed)",
+                opt_type_email_action_taken: "対応・送付完了報告 (Action Taken/Sent)",
                 opt_type_email_gen: "一般ビジネスメール (General)",
-                opt_type_email_thank: "お礼メール (Thank You)",
                 opt_type_email_follow: "進捗確認メール (Follow-up)",
-                opt_type_email_ship: "出荷案内 (Shipping Advice)",
                 f_work_done: "完了した作業:",
                 f_issues: "問題点・改善点:",
                 f_next_week: "来週の予定:",
@@ -598,9 +724,10 @@
                 f_leave_type: "休暇の種類 (病欠・用事・有給):",
                 f_leave_period: "期間 (開始日 - 終了日):",
                 f_leave_reason: "理由 (簡潔に):",
-                opt_type_leave: "休暇届 (Leave Request) 🤒",
+                opt_type_leave: "休暇連絡メール (Leave Notification)",
                 opt_type_reimburse: "経費精算 (Reimbursement)",
-                opt_type_joiner: "新入社員の紹介 (New Joiner)",
+                opt_type_request_equip: "備品申請 (Equipment Request)",
+                opt_type_repair: "修理・ITサポート依頼 (Maintenance/IT)",
                 f_amount: "金額:",
                 f_description: "経費の内容:",
                 f_receipt: "証憑 (領収書など):",
@@ -608,8 +735,15 @@
                 f_pos: "役職:",
                 f_join_date: "入社日:",
                 f_intro: "簡潔な紹介:",
-                warn_th: "⚠️ タイ語を入力してください",
-                warn_jp: "⚠️ 日本語を入力してください",
+                f_task_name: "完了した作業・案件名:",
+                f_sent_item: "送付物・対応内容:",
+                f_remark: "特記事項:",
+                f_equip_name: "申請する備品名:",
+                f_equip_reason: "必要な理由:",
+                f_issue_desc: "不具合の詳細・症状:",
+                f_issue_impact: "業務への影響:",
+                warn_th: "<i class='bi bi-exclamation-triangle-fill text-warning'></i> タイ語を入力してください",
+                warn_jp: "<i class='bi bi-exclamation-triangle-fill text-warning'></i> 日本語を入力してください",
                 opt_rec_mgr: "上司・マネージャー (Manager)",
                 opt_rec_sen: "先輩・メンター (Mentor)",
                 opt_rec_cli: "顧客・クライアント (Client)",
@@ -617,14 +751,17 @@
                 opt_rec_gen: "一般",
                 btn_file: "ファイルを選択",
                 no_file: "ファイルが選択されていません",
-                glos_title: "📚 専門用語集 (Thai ↔ Japanese)",
+                docs_names: "➕ 差出人・宛名を入力 (Optional)",
+                docs_sender: "<i class='bi bi-person-fill'></i> 差出人名",
+                docs_sender_ph: "例：ソムチャイ または 営業部",
+                docs_rec_name: "<i class='bi bi-person-badge-fill'></i> 宛名（相手の名前）",
+                docs_rec_name_ph: "例：高橋様 または お客様",
+                glos_title: "<i class='bi bi-book text-primary'></i> 専門用語集 (Thai ↔ Japanese)",
                 glos_ph: "単語を入力（タイ語・日本語）...",
                 glos_btn: "検索",
                 glos_ex: "使用例:",
                 btn_copy: "コピー",
-                btn_save_doc: "Word保存",
                 btn_save_pdf: "PDF保存",
-                btn_save_txt: "TXT保存",
                 btn_send_email: "メール送信",
                 btn_verify: "内容を確認 (タイ語)",
                 verify_title: "内容の確認 (タイ語):",
@@ -632,7 +769,7 @@
                 modal_close: "閉じる",
                 res_docs_title: "作成結果",
                 tab_polite: "敬語チェック",
-                polite_title: "⚖️ 敬語・礼儀分析 (Keigo Checker)",
+                polite_title: "<i class='bi bi-scales text-primary'></i> 敬語・礼儀分析 (Keigo Checker)",
                 polite_label_text: "確認したい日本語の文章",
                 polite_label_rec: "相手 (Recipient)",
                 polite_ph: "例：水飲みたい...",
@@ -673,16 +810,17 @@
                 ];
             } else if (cat === 'emails') {
                 options = [
+                    { val: 'email_task_done', id: 'opt_type_email_task_done' },
+                    { val: 'email_action_taken', id: 'opt_type_email_action_taken' },
+                    { val: 'leave_request', id: 'opt_type_leave' },
                     { val: 'email_general', id: 'opt_type_email_gen' },
-                    { val: 'email_thank_you', id: 'opt_type_email_thank' },
-                    { val: 'email_follow_up', id: 'opt_type_email_follow' },
-                    { val: 'email_logistics', id: 'opt_type_email_ship' }
+                    { val: 'email_follow_up', id: 'opt_type_email_follow' }
                 ];
             } else if (cat === 'admin') {
                 options = [
-                    { val: 'leave_request', id: 'opt_type_leave' },
                     { val: 'reimbursement', id: 'opt_type_reimburse' },
-                    { val: 'new_joiner', id: 'opt_type_joiner' }
+                    { val: 'request_equip', id: 'opt_type_request_equip' },
+                    { val: 'repair', id: 'opt_type_repair' }
                 ];
             }
 
@@ -719,7 +857,7 @@
             if (transMode === 'jp-th' && isTH && !isJP) showWarning = true;
 
             warning.style.display = showWarning ? 'block' : 'none';
-            warning.innerText = transMode === 'th-jp' ? translations[currentLang].warn_th : translations[currentLang].warn_jp;
+            warning.innerHTML = transMode === 'th-jp' ? translations[currentLang].warn_th : translations[currentLang].warn_jp;
         }
 
         function updateDocFields() {
@@ -758,23 +896,22 @@
                     { id: 'f3', label: t.f_defect, key: 'defect', rows: 2 },
                     { id: 'f4', label: t.f_qty, key: 'qty', rows: 1 }
                 ];
-            } else if (type === 'email_thank_you') {
+            } else if (type === 'email_task_done') {
                 fields = [
-                    { id: 'f1', label: t.f_met_person, key: 'person', rows: 1 },
-                    { id: 'f2', label: t.f_discussion, key: 'discussion', rows: 3 },
-                    { id: 'f3', label: t.f_next_step, key: 'next_step', rows: 2 }
+                    { id: 'f1', label: t.f_task_name, key: 'task_name', rows: 1 },
+                    { id: 'f2', label: t.f_work_done, key: 'work_done', rows: 3 },
+                    { id: 'f3', label: t.f_remark, key: 'remark', rows: 2 }
+                ];
+            } else if (type === 'email_action_taken') {
+                fields = [
+                    { id: 'f1', label: t.f_sent_item, key: 'sent_item', rows: 3 },
+                    { id: 'f2', label: t.f_remark, key: 'remark', rows: 2 }
                 ];
             } else if (type === 'email_follow_up') {
                 fields = [
                     { id: 'f1', label: t.f_project, key: 'project', rows: 1 },
                     { id: 'f2', label: t.f_pending, key: 'pending', rows: 2 },
                     { id: 'f3', label: t.f_expected_date, key: 'expect_date', rows: 1 }
-                ];
-            } else if (type === 'email_logistics') {
-                fields = [
-                    { id: 'f1', label: t.f_item_list, key: 'items', rows: 3 },
-                    { id: 'f2', label: t.f_vehicle, key: 'vehicle', rows: 1 },
-                    { id: 'f3', label: t.f_dep_time, key: 'dep_time', rows: 1 }
                 ];
             } else if (type.startsWith('email')) {
                 fields = [
@@ -793,12 +930,15 @@
                     { id: 'f2', label: t.f_description, key: 'desc', rows: 2 },
                     { id: 'f3', label: t.f_receipt, key: 'receipt_ref', rows: 1 }
                 ];
-            } else if (type === 'new_joiner') {
+            } else if (type === 'request_equip') {
                 fields = [
-                    { id: 'f1', label: t.f_name, key: 'name', rows: 1 },
-                    { id: 'f2', label: t.f_pos, key: 'position', rows: 1 },
-                    { id: 'f3', label: t.f_join_date, key: 'start_date', rows: 1 },
-                    { id: 'f4', label: t.f_intro, key: 'intro', rows: 3 }
+                    { id: 'f1', label: t.f_equip_name, key: 'equip_name', rows: 2 },
+                    { id: 'f2', label: t.f_equip_reason, key: 'reason', rows: 2 }
+                ];
+            } else if (type === 'repair') {
+                fields = [
+                    { id: 'f1', label: t.f_issue_desc, key: 'issue_desc', rows: 3 },
+                    { id: 'f2', label: t.f_issue_impact, key: 'impact', rows: 2 }
                 ];
             } else {
                 fields = [
@@ -810,9 +950,9 @@
             const hintEl = document.getElementById('ui-docs-hint');
             const cat = document.getElementById('docCategory').value;
             if (hintEl) {
-                if (cat === 'emails') hintEl.innerText = t.docs_hint_email;
-                else if (cat === 'reports') hintEl.innerText = t.docs_hint_report;
-                else hintEl.innerText = t.docs_hint_admin;
+                if (cat === 'emails') hintEl.innerHTML = t.docs_hint_email;
+                else if (cat === 'reports') hintEl.innerHTML = t.docs_hint_report;
+                else hintEl.innerHTML = t.docs_hint_admin;
             }
 
             container.innerHTML = fields.map(f => `
@@ -836,22 +976,18 @@
 
         function updateTransUI() {
             const container = document.getElementById('ui-trans-title-container');
-            const thChip = '<span class="lang-chip th">🇹🇭 ไทย</span>';
-            const jpChip = '<span class="lang-chip jp">🇯🇵 日本語</span>';
-            const sep = '<span class="lang-sep">↔</span>';
-            
-            if (transMode === 'th-jp') {
-                container.innerHTML = `${thChip} ${sep} ${jpChip}`;
-                document.getElementById('thaiInput').placeholder = translations[currentLang].trans_ph;
-            } else {
-                container.innerHTML = `${jpChip} ${sep} ${thChip}`;
-                document.getElementById('thaiInput').placeholder = translations[currentLang].trans_ph;
+            if (container) {
+                container.innerHTML = translations[currentLang].trans_title;
+            }
+            const inputEl = document.getElementById('thaiInput');
+            if (inputEl) {
+                inputEl.placeholder = translations[currentLang].trans_ph;
             }
         }
 
         function updateUI() {
             const t = translations[currentLang];
-            const setUI = (id, text, attr = 'innerText') => {
+            const setUI = (id, text, attr = 'innerHTML') => {
                 const el = document.getElementById(id);
                 if (el) el[attr] = text;
             };
@@ -869,24 +1005,20 @@
             setUI('ui-btn-translate', t.btn_trans);
             
             // Dynamic labels for Thai results
-            if (transMode === 'jp-th') {
-                setUI('ui-res-cas', t.res_cas); // ทั่วไป / เป็นกันเอง
-                setUI('ui-res-pol', "-");
-                setUI('ui-res-bus', t.res_bus); // สุภาพ / ทางการ
-            } else {
-                setUI('ui-res-cas', t.res_cas);
-                setUI('ui-res-pol', t.res_pol);
-                setUI('ui-res-bus', t.res_bus);
-            }
+
+
+            // Radio Mode
+            setUI('ui-trans-mode-label', t.trans_mode_label);
+            setUI('ui-trans-mode-read', t.trans_mode_read);
+            setUI('ui-trans-mode-draft', t.trans_mode_draft);
             
             setUI('ui-btn-copy-1', t.btn_copy);
             setUI('ui-btn-copy-2', t.btn_copy);
             setUI('ui-btn-copy-3', t.btn_copy);
+            setUI('ui-btn-copy-read', t.btn_copy);
             setUI('ui-btn-copy-docs', t.btn_copy);
-            setUI('ui-btn-save-docs', t.btn_save_doc);
-            setUI('ui-btn-save-pdf', t.btn_save_pdf);
-            setUI('ui-btn-save-txt', t.btn_save_txt);
-            setUI('ui-btn-verify-docs', t.btn_verify);
+                        setUI('ui-btn-save-pdf', t.btn_save_pdf);
+                        setUI('ui-btn-verify-docs', t.btn_verify);
             setUI('ui-verify-title', t.verify_title);
             setUI('ui-btn-send-email', t.btn_send_email);
             setUI('ui-res-docs-title', t.res_docs_title);
@@ -897,6 +1029,13 @@
             setUI('ui-docs-label-type', t.docs_type);
             setUI('ui-docs-label-recipient', t.docs_recip);
             setUI('ui-docs-label-file', t.docs_file);
+            setUI('ui-docs-label-names', t.docs_names);
+            setUI('ui-docs-label-sender', t.docs_sender);
+            setUI('ui-docs-label-rec-name', t.docs_rec_name);
+            const senderEl = document.getElementById('docSender');
+            if (senderEl) senderEl.placeholder = t.docs_sender_ph;
+            const recNameEl = document.getElementById('docRecipientName');
+            if (recNameEl) recNameEl.placeholder = t.docs_rec_name_ph;
             
             const cat = document.getElementById('docCategory').value;
             if (cat === 'emails') setUI('ui-docs-hint', t.docs_hint_email);
@@ -972,6 +1111,12 @@
                     }
                     payload = new FormData();
                     payload.append('text_input', textInput);
+                    payload.append('ui_lang', currentLang);
+                    
+                    const reqTransMode = document.querySelector('input[name="transModeOpt"]:checked');
+                    if(reqTransMode) {
+                        payload.append('trans_mode', reqTransMode.value);
+                    }
                 } else if (mode === 'docs') {
                     const docFileInput = document.getElementById('docFile');
                     const docFile = docFileInput && docFileInput.files[0] ? docFileInput.files[0] : null;
@@ -991,7 +1136,10 @@
                     payload = new FormData();
                     payload.append('type', document.getElementById('docType').value);
                     payload.append('recipient', document.getElementById('docRecipient').value);
-                    payload.append('date', document.getElementById('docDate').value);
+                    const docDateEl = document.getElementById('docDate');
+                    const today = new Date().toLocaleDateString('th-TH', { year: 'numeric', month: 'long', day: 'numeric' });
+                    payload.append('date', docDateEl && docDateEl.value ? docDateEl.value : today);
+                    payload.append('ui_lang', currentLang);
                     payload.append('topic', JSON.stringify(topicObj));
                     if (docFile) {
                         payload.append('document', docFile);
@@ -1004,11 +1152,6 @@
                     }
                     payload = JSON.stringify({ term: term, ui_lang: currentLang });
                     headers = {'Content-Type': 'application/json'};
-                } else if (mode === 'ocr') {
-                    payload = new FormData();
-                    const fileInput = document.getElementById('ocrImage');
-                    if(fileInput.files.length === 0) throw new Error(currentLang === 'th' ? "กรุณาเลือกไฟล์" : "ファイルを選択してください");
-                    payload.append('image', fileInput.files[0]);
                 } else if (mode === 'polite') {
                     const politeInput = document.getElementById('politeInput').value.trim();
                     if (!politeInput) throw new Error(currentLang === 'th' ? "กรุณาระบุข้อความ" : "文章を入力してください");
@@ -1063,26 +1206,34 @@
 
         function displayResult(mode, data) {
             if (mode === 'translate') {
-                document.getElementById('resCas').innerText = data.casual;
-                document.getElementById('resPol').innerText = data.polite;
-                document.getElementById('resBus').innerText = data.business;
                 document.getElementById('resTranslate').style.display = 'block';
+                const reqTransMode = document.querySelector('input[name="transModeOpt"]:checked');
+                if (reqTransMode && reqTransMode.value === 'read') {
+                    document.getElementById('resTranslateDraft').style.display = 'none';
+                    document.getElementById('resTranslateRead').style.display = 'block';
+                    document.getElementById('resRead').innerText = data.business || data.result || "-";
+                } else {
+                    document.getElementById('resTranslateDraft').style.display = 'flex';
+                    document.getElementById('resTranslateRead').style.display = 'none';
+                    document.getElementById('resCas').innerText = data.casual || "-";
+                    document.getElementById('resPol').innerText = data.polite || "-";
+                    document.getElementById('resBus').innerText = data.business || "-";
+                }
             } else if (mode === 'docs') {
                 document.getElementById('resDocs').innerText = data.result;
                 document.getElementById('resDocsArea').style.display = 'block';
                 
                 // Show relevant buttons for email type
-                const isEmail = document.getElementById('docType').value === 'email';
+                const docType = document.getElementById('docType').value;
+                const docCat = document.getElementById('docCategory').value;
+                const isEmail = (docCat === 'emails' || docType === 'leave_request');
+                
                 const emailBtn = document.getElementById('btnEmailSend');
-                const wordBtn = document.getElementById('btnSaveWord');
                 const pdfBtn = document.getElementById('btnSavePDF');
-                const txtBtn = document.getElementById('btnSaveTXT');
-
+                
                 if (emailBtn) emailBtn.style.display = isEmail ? 'inline-block' : 'none';
-                if (wordBtn) wordBtn.style.display = isEmail ? 'none' : 'inline-block';
-                if (pdfBtn) pdfBtn.style.display = isEmail ? 'none' : 'inline-block';
-                if (txtBtn) txtBtn.style.display = isEmail ? 'none' : 'inline-block';
-            } else if (mode === 'glossary') {
+                if (pdfBtn) pdfBtn.style.display = (docCat === 'reports' || docCat === 'admin') ? 'inline-block' : 'none';
+                            } else if (mode === 'glossary') {
                 document.getElementById('glossTermJP').innerHTML = `${data.term_main} <span class="mx-2 text-muted">↔</span> ${data.term_target}`;
                 document.getElementById('glossReading').innerText = data.reading ? `[${data.reading}]` : "";
                 document.getElementById('glossDef').innerText = data.definition;
@@ -1099,6 +1250,42 @@
                 document.getElementById('politeExplain').innerText = data.explanation;
                 document.getElementById('resPolite').style.display = 'block';
             }
+
+            // Auto-scroll to result
+            const resultIds = {
+                'translate': 'resTranslate',
+                'docs': 'resDocsArea',
+                'glossary': 'resGlossary',
+                'polite': 'resPolite',
+            };
+            const targetId = resultIds[mode];
+            if (targetId) {
+                const el = document.getElementById(targetId);
+                if (el) {
+                    setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+                }
+            }
+        }
+
+        function showToast(message, icon = 'check-circle-fill') {
+            const container = document.getElementById('toastContainer');
+            if(!container) return;
+            const toast = document.createElement('div');
+            toast.className = 'toast-notification';
+            toast.innerHTML = `<i class="bi bi-${icon} text-success" style="font-size: 1.1rem;"></i> <span>${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            // Show toast
+            setTimeout(() => {
+                toast.classList.add('show');
+            }, 10);
+            
+            // Remove toast
+            setTimeout(() => {
+                toast.classList.remove('show');
+                setTimeout(() => toast.remove(), 400);
+            }, 3000);
         }
 
         async function copyText(elementId) {
@@ -1112,45 +1299,14 @@
             
             try {
                 await navigator.clipboard.writeText(cleanText);
-                alert(currentLang === 'th' ? 'คัดลอกแล้ว!' : 'コピーしました！');
+                showToast(currentLang === 'th' ? 'คัดลอกข้อความสำเร็จ!' : 'テキストをコピーしました！');
             } catch (err) {
                 console.error('Failed to copy: ', err);
+                showToast('Failed to copy text', 'x-circle-fill');
             }
         }
 
-        function downloadDoc() {
-            const content = document.getElementById('resDocs').innerText;
-            const type = document.getElementById('docType').value;
-            const date = document.getElementById('docDate').value || 'document';
-            
-            // Convert newlines to <br> for Word compatibility
-            const formattedContent = content.replace(/\n/g, '<br>');
-            
-            // Professional formatted Word HTML blob
-            const htmlContent = `
-                <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://www.w3.org/TR/REC-html40'>
-                <head><meta charset='utf-8'>
-                <style>
-                    @page { size: A4; margin: 1in; }
-                    body { font-family: 'MS Mincho', 'Times New Roman', serif; font-size: 11pt; line-height: 1.6; color: #000; }
-                    .content { margin-bottom: 20px; }
-                </style>
-                </head>
-                <body>
-                    <div class="content">${formattedContent}</div>
-                </body>
-                </html>
-            `;
-            const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `OfficeBuddy_${type}_${date}.doc`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
+
 
         function downloadPDF() {
             const content = document.getElementById('resDocs').innerText;
@@ -1200,21 +1356,7 @@
             printWindow.document.close();
         }
 
-        function downloadTXT() {
-            const content = document.getElementById('resDocs').innerText;
-            const type = document.getElementById('docType').value;
-            const date = document.getElementById('docDate').value || 'document';
-            
-            const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `OfficeBuddy_${type}_${date}.txt`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-        }
+
 
         function sendEmail() {
             const text = document.getElementById('resDocs').innerText;
