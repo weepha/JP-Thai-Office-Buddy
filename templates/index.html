@@ -921,7 +921,7 @@
             } else if (type === 'leave_request') {
                 fields = [
                     { id: 'f1', label: t.f_leave_type, key: 'leave_type', rows: 1 },
-                    { id: 'f2', label: t.f_leave_period, key: 'period', rows: 1 },
+                    { id: 'f2', label: t.f_leave_period, key: 'period', rows: 1, ph: currentLang === 'th' ? "เช่น 24/03/2026 - 25/03/2026 หรือ 24 มี.ค. - 25 มี.ค." : "例：2026年3月24日 〜 3月25日" },
                     { id: 'f3', label: t.f_leave_reason, key: 'reason', rows: 2 }
                 ];
             } else if (type === 'reimbursement') {
@@ -958,7 +958,7 @@
             container.innerHTML = fields.map(f => `
                 <div class="mb-2">
                     <label class="dynamic-field-label px-2">${f.label}</label>
-                    <textarea class="form-control border-0 bg-light topic-field" id="${f.id}" rows="${f.rows}" data-key="${f.key}" placeholder="..."></textarea>
+                    <textarea class="form-control border-0 bg-light topic-field" id="${f.id}" rows="${f.rows}" data-key="${f.key}" placeholder="${f.ph || '...'}"></textarea>
                 </div>
             `).join('');
         }
@@ -1011,6 +1011,10 @@
             setUI('ui-trans-mode-label', t.trans_mode_label);
             setUI('ui-trans-mode-read', t.trans_mode_read);
             setUI('ui-trans-mode-draft', t.trans_mode_draft);
+            
+            setUI('ui-res-cas', t.res_cas);
+            setUI('ui-res-pol', t.res_pol);
+            setUI('ui-res-bus', t.res_bus);
             
             setUI('ui-btn-copy-1', t.btn_copy);
             setUI('ui-btn-copy-2', t.btn_copy);
