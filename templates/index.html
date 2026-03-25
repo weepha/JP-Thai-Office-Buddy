@@ -283,6 +283,13 @@
         .btn:active {
             transform: scale(0.95) !important;
         }
+        
+        .form-select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23333' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m2 5 6 6 6-6'/%3E%3C/svg%3E") !important;
+            background-repeat: no-repeat !important;
+            background-position: right 0.75rem center !important;
+            background-size: 14px 10px !important;
+        }
 
         /* --- Comprehensive Mobile UI Overrides --- */
         @media (max-width: 576px) {
@@ -350,6 +357,29 @@
             /* Fix Radio buttons on mobile Translation Tab */
             .form-check {
                 margin-bottom: 0.5rem;
+            }
+        }
+
+        /* --- Native PDF Print Styles --- */
+        @media print {
+            body * {
+                visibility: hidden;
+            }
+            #resDocs, #resDocs * {
+                visibility: visible;
+                color: black !important;
+                background-color: transparent !important;
+                box-shadow: none !important;
+            }
+            #resDocs {
+                position: absolute;
+                left: 0;
+                top: 0;
+                width: 100%;
+                margin: 0;
+                padding: 10px;
+                border: none !important;
+                font-size: 11pt !important;
             }
         }
     </style>
@@ -737,7 +767,6 @@
 
         <!-- Scripts -->
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-        <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
         <script>
             let currentLang = 'th';
             let transMode = 'th-jp'; // New state for translation direction
@@ -760,9 +789,9 @@
                     trans_mode_draft: "แตกย่อย 3 ระดับ (For drafting)",
                     docs_title: "<i class='bi bi-journal-text text-primary'></i> ระบบร่างเอกสารอัตโนมัติ",
                     docs_date: "วันที่เอกสาร/วันที่มีผล",
-                    docs_label_cat: "หมวดหมู่เอกสาร (กดเลือก ▼)",
-                    docs_type: "ประเภทเอกสารเฉพาะ (กดเลือก ▼)",
-                    docs_recip: "ผู้รับสาร (กดเลือก ▼)",
+                    docs_label_cat: "หมวดหมู่เอกสาร",
+                    docs_type: "ประเภทเอกสารเฉพาะ",
+                    docs_recip: "ผู้รับสาร",
                     docs_info: "หัวใจสำคัญ/ข้อมูลดิบ",
                     docs_ph: "ระบุเนื้อหาสำคัญหรือข้อมูลดิบลงที่นี่...",
                     docs_hint_email: "<i class='bi bi-lightbulb-fill text-warning'></i> ระบุข้อมูลเมลได้โดยการพิมพ์ หรือแนบไฟล์อ้างอิง (หรือใส่ทั้งสองอย่างได้) เพื่อให้ AI ช่วยร่างเมลได้ทันทีครับ (หากมีไฟล์แนบ อย่าลืมแนบในเมล์จริงอีกครั้งด้วยนะครับ)",
@@ -856,7 +885,7 @@
                     tab_polite: "ตรวจความสุภาพ",
                     polite_title: "<i class='bi bi-scales text-primary'></i> ตรวจความสุภาพ (Keigo)",
                     polite_label_text: "ประโยคภาษาญี่ปุ่นที่ต้องการตรวจ",
-                    polite_label_rec: "ผู้รับสาร (กดเลือก ▼)",
+                    polite_label_rec: "ผู้รับสาร (Recipient)",
                     polite_ph: "เช่น: Mizu nomitai...",
                     btn_polite: "วิเคราะห์ความสุภาพ",
                     polite_res_analysis: "จุดที่ควรปรับปรุง:",
@@ -885,9 +914,9 @@
                     trans_mode_draft: "返信用に3つの表現を比較 (Drafting)",
                     docs_title: "<i class='bi bi-journal-text text-primary'></i> 自動書類作成システム",
                     docs_date: "日付 / 適用日",
-                    docs_label_cat: "書類の品目 (▼選択)",
-                    docs_type: "詳細の書類種類 (▼選択)",
-                    docs_recip: "宛先 (▼選択)",
+                    docs_label_cat: "書類の品目",
+                    docs_type: "詳細の書類種類",
+                    docs_recip: "宛先",
                     docs_info: "主要な内容 / 生データ",
                     docs_ph: "主要な内容や生データをここに入力してください...",
                     docs_hint_email: "<i class='bi bi-lightbulb-fill text-warning'></i> テキスト入力またはファイル添付のいずれかを元に、AIがメールを起案します（添付ファイルがある場合は、メーラー側で再度添付してください）。",
@@ -980,7 +1009,7 @@
                     tab_polite: "敬語チェック",
                     polite_title: "<i class='bi bi-scales text-primary'></i> 敬語チェック",
                     polite_label_text: "確認したい日本語の文章",
-                    polite_label_rec: "相手 / Recipient (▼選択)",
+                    polite_label_rec: "相手 (Recipient)",
                     polite_ph: "例：水飲みたい...",
                     btn_polite: "敬語を分析する",
                     polite_res_analysis: "改善点・分析:",
@@ -1181,9 +1210,12 @@
                 if (thaiInput) {
                     thaiInput.addEventListener('focus', function() {
                         setTimeout(() => {
-                            const btn = document.getElementById('btnTranslate');
-                            if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        }, 400); // Wait for mobile keyboard animation
+                            // Scroll the header container to the completely top, making the translation box and button fully visible
+                            const container = document.getElementById('ui-trans-title-container');
+                            if (container) {
+                                container.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                            }
+                        }, 150); // Much shorter delay for immediate, fluid interaction
                     });
                 }
             };
@@ -1553,32 +1585,9 @@
 
 
             function downloadPDF() {
-                const contentText = document.getElementById('resDocs').innerText;
-                const type = document.getElementById('docType').value;
-                const date = document.getElementById('docDate').value || 'document';
-                
-                const printContainer = document.createElement('div');
-                printContainer.style.padding = '30px';
-                printContainer.style.fontFamily = "'Segoe UI', 'Meiryo', sans-serif";
-                printContainer.style.color = '#333';
-                printContainer.style.fontSize = '12pt';
-                printContainer.style.lineHeight = '1.6';
-                printContainer.style.whiteSpace = 'pre-wrap';
-                printContainer.innerText = contentText;
-                
-                const opt = {
-                    margin:       [0.5, 0.5, 0.5, 0.5],
-                    filename:     `OfficeBuddy_${type}_${date}.pdf`,
-                    image:        { type: 'jpeg', quality: 0.98 },
-                    html2canvas:  { scale: 2 },
-                    jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
-                };
-                
-                showToast(currentLang === 'th' ? '<i class="bi bi-hourglass-split"></i> กำลังสร้างไฟล์ PDF กรุณารอสักครู่...' : 'PDFを作成しています...');
-                
-                html2pdf().set(opt).from(printContainer).save().then(() => {
-                    showToast(currentLang === 'th' ? 'ดาวน์โหลดไฟล์ PDF สำเร็จ!' : 'PDFファイルをダウンロードしました！');
-                });
+                // Rely on native mobile and desktop print dialogs to generate PDF flawlessly
+                window.print();
+                showToast(currentLang === 'th' ? 'เตรียมหน้าต่างสำหรับบันทึก PDF สำเร็จ!' : 'PDF保存の準備が完了しました！');
             }
 
 
