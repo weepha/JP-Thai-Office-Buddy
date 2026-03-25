@@ -1210,12 +1210,9 @@
                 if (thaiInput) {
                     thaiInput.addEventListener('focus', function() {
                         setTimeout(() => {
-                            // Scroll the header container to the completely top, making the translation box and button fully visible
-                            const container = document.getElementById('ui-trans-title-container');
-                            if (container) {
-                                container.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                            }
-                        }, 150); // Much shorter delay for immediate, fluid interaction
+                            const btn = document.getElementById('btnTranslate');
+                            if (btn) btn.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                        }, 300);
                     });
                 }
             };
