@@ -422,17 +422,14 @@ def verify_content():
 
 
 
-    # สร้าง Prompt แบบเข้มงวดสำหรับการแปลและคงเอกสาร
+    # สร้าง Prompt แบบภาษาอังกฤษที่เข้มงวดเพื่อป้องกันไม่ให้ AI เกิดความสับสนกับประโยคคำสั่ง
     prompt_text = (
-        f"คุณคือผู้แปลเอกสารระดับมืออาชีพ ภารกิจคือการแปลจาก {src_lang} เป็น {dst_lang} แบบคำต่อคำและบรรทัดต่อบรรทัด\n\n"
-        "⚠️ กฎเหล็กที่ต้องปฏิบัติตามอย่างเคร่งครัด ⚠️\n"
-        "1. รักษารูปแบบ 100%: ต้องเว้นบรรทัด ย่อหน้า และจัดตำแหน่งให้เหมือนกับต้นฉบับเป๊ะๆ\n"
-        "2. แปลครบ 100%: ห้ามข้าม ห้ามสรุป ห้ามตัดข้อความใดๆ ทิ้ง แม้แต่บรรทัดเดียว ทั้งวันที่, หัวเรื่อง, คำทักทาย, และคำลงท้าย ต้องแปลครบทุกบรรทัด\n"
-        "3. ส่งคืนผลลัพธ์ที่เป็นคำแปลเท่านั้น: ห้ามมีคำอธิบาย ห้ามเกริ่นนำ ห้ามพูดคุยเด็ดขาด\n\n"
-        "ข้อความต้นฉบับที่ต้องแปล:\n"
-        "--- START ---\n"
-        + text_input +
-        "\n--- END ---"
+        f"Please translate the following business document from {src_lang} to {dst_lang} completely and accurately.\n"
+        "CRITICAL INSTRUCTIONS:\n"
+        "1. Translate EVERYTHING. Do NOT omit any lines, dates, names, greetings, or sign-offs.\n"
+        "2. Preserve all formatting, paragraphs, blank lines, and line breaks EXACTLY as they are in the original.\n"
+        "3. ALWAYS respond ONLY with the translated text. DO NOT include any reasoning, conversational text, or explanations.\n\n"
+        f"ORIGINAL DOCUMENT:\n\n{text_input}"
     )
 
     
@@ -448,8 +445,17 @@ def verify_content():
         
 
     # คืนค่าเป็นข้อความดิบ (Plain Text) เพื่อความเสถียรสูงสุด
-
-    return result.strip() if result else "ไม่สามารถประมวลผลได้"
+    res_text = result.strip() if result else "ไม่สามารถประมวลผลได้"
+    
+    # ลบกล่อง Markdown ออกถ้า AI แอบใส่มา
+    if res_text.startswith("```") and res_text.endswith("```"):
+        lines = res_text.split("\n")
+        if len(lines) >= 2:
+            lines.pop(0)
+            lines.pop(-1)
+        res_text = "\n".join(lines).strip()
+        
+    return res_text
 
 
 
