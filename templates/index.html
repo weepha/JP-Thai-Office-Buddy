@@ -318,9 +318,13 @@
                 font-size: 1.15rem !important;
             }
 
-            .form-control,
-            .form-select {
+            .form-control {
                 padding: 12px 14px !important;
+                font-size: 0.95rem !important;
+            }
+            
+            .form-select {
+                padding: 12px 36px 12px 14px !important; /* Preserve right padding for the caret ▼ */
                 font-size: 0.95rem !important;
             }
 
@@ -756,9 +760,9 @@
                     trans_mode_draft: "แตกย่อย 3 ระดับ (For drafting)",
                     docs_title: "<i class='bi bi-journal-text text-primary'></i> ระบบร่างเอกสารอัตโนมัติ",
                     docs_date: "วันที่เอกสาร/วันที่มีผล",
-                    docs_label_cat: "หมวดหมู่เอกสาร",
-                    docs_type: "ประเภทเอกสารเฉพาะ",
-                    docs_recip: "ผู้รับสาร",
+                    docs_label_cat: "หมวดหมู่เอกสาร (กดเลือก ▼)",
+                    docs_type: "ประเภทเอกสารเฉพาะ (กดเลือก ▼)",
+                    docs_recip: "ผู้รับสาร (กดเลือก ▼)",
                     docs_info: "หัวใจสำคัญ/ข้อมูลดิบ",
                     docs_ph: "ระบุเนื้อหาสำคัญหรือข้อมูลดิบลงที่นี่...",
                     docs_hint_email: "<i class='bi bi-lightbulb-fill text-warning'></i> ระบุข้อมูลเมลได้โดยการพิมพ์ หรือแนบไฟล์อ้างอิง (หรือใส่ทั้งสองอย่างได้) เพื่อให้ AI ช่วยร่างเมลได้ทันทีครับ (หากมีไฟล์แนบ อย่าลืมแนบในเมล์จริงอีกครั้งด้วยนะครับ)",
@@ -852,7 +856,7 @@
                     tab_polite: "ตรวจความสุภาพ",
                     polite_title: "<i class='bi bi-scales text-primary'></i> ตรวจความสุภาพ (Keigo)",
                     polite_label_text: "ประโยคภาษาญี่ปุ่นที่ต้องการตรวจ",
-                    polite_label_rec: "ผู้รับสาร (Recipient)",
+                    polite_label_rec: "ผู้รับสาร (กดเลือก ▼)",
                     polite_ph: "เช่น: Mizu nomitai...",
                     btn_polite: "วิเคราะห์ความสุภาพ",
                     polite_res_analysis: "จุดที่ควรปรับปรุง:",
@@ -881,9 +885,9 @@
                     trans_mode_draft: "返信用に3つの表現を比較 (Drafting)",
                     docs_title: "<i class='bi bi-journal-text text-primary'></i> 自動書類作成システム",
                     docs_date: "日付 / 適用日",
-                    docs_label_cat: "書類の品目",
-                    docs_type: "詳細の書類種類",
-                    docs_recip: "宛先",
+                    docs_label_cat: "書類の品目 (▼選択)",
+                    docs_type: "詳細の書類種類 (▼選択)",
+                    docs_recip: "宛先 (▼選択)",
                     docs_info: "主要な内容 / 生データ",
                     docs_ph: "主要な内容や生データをここに入力してください...",
                     docs_hint_email: "<i class='bi bi-lightbulb-fill text-warning'></i> テキスト入力またはファイル添付のいずれかを元に、AIがメールを起案します（添付ファイルがある場合は、メーラー側で再度添付してください）。",
@@ -976,7 +980,7 @@
                     tab_polite: "敬語チェック",
                     polite_title: "<i class='bi bi-scales text-primary'></i> 敬語チェック",
                     polite_label_text: "確認したい日本語の文章",
-                    polite_label_rec: "相手 (Recipient)",
+                    polite_label_rec: "相手 / Recipient (▼選択)",
                     polite_ph: "例：水飲みたい...",
                     btn_polite: "敬語を分析する",
                     polite_res_analysis: "改善点・分析:",
