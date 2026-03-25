@@ -546,7 +546,6 @@
                                         onchange="updateSubtypes()">
                                         <option value="reports" id="opt-cat-reports">รายงาน (Reports)</option>
                                         <option value="emails" id="opt-cat-emails">อีเมล (Emails)</option>
-                                        <option value="admin" id="opt-cat-admin">ธุรการ/HR (Admin)</option>
                                     </select>
                                 </div>
                                 <div class="col-md-4">
@@ -782,13 +781,16 @@
                     opt_type_leave: "อีเมลแจ้งขอลาหยุด (Leave Notification)",
                     opt_type_email_gen: "อีเมลธุรกิจทั่วไป (General)",
                     opt_type_email_follow: "อีเมลติดตามงาน (Follow-up)",
-                    f_work_done: "งานที่ทำเสร็จแล้ว:",
-                    f_issues: "ปัญหาที่พบ/สิ่งที่ต้องปรับปรุง:",
-                    f_next_week: "แผนงานสัปดาห์หน้า:",
-                    f_today: "กิจกรรมวันนี้:",
-                    f_tomorrow: "แผนงานวันพรุ่งนี้:",
-                    f_subject: "หัวข้ออีเมล (ถ้ามี):",
-                    f_body: "เนื้อหาใจความสำคัญ:",
+                    opt_type_reimburse: "อีเมลเบิกค่าใช้จ่าย (Reimbursement)",
+                    opt_type_request_equip: "อีเมลขอเบิกอุปกรณ์ (Equipment Request)",
+                    opt_type_repair: "อีเมลแจ้งซ่อม/IT Support (Maintenance/IT)",
+                    f_work_done: "<span class='text-danger'>*</span> งานที่ทำเสร็จแล้ว:",
+                    f_issues: "ปัญหาที่พบ/สิ่งที่ต้องปรับปรุง (Optional):",
+                    f_next_week: "แผนงานสัปดาห์หน้า (Optional):",
+                    f_today: "<span class='text-danger'>*</span> กิจกรรมวันนี้:",
+                    f_tomorrow: "แผนงานวันพรุ่งนี้ (Optional):",
+                    f_subject: "หัวข้ออีเมล (Optional):",
+                    f_body: "<span class='text-danger'>*</span> เนื้อหาใจความสำคัญ:",
                     f_status: "สถานะไม้ปัจจุบัน:",
                     f_lot_no: "เลขที่ Lot:",
                     f_species: "ชนิดไม้:",
@@ -797,29 +799,29 @@
                     f_met_person: "บุคคลที่เข้าพบ:",
                     f_discussion: "หัวข้อสำคัญที่คุยกัน:",
                     f_next_step: "สิ่งที่ต้องทำต่อไป:",
-                    f_project: "ชื่อโปรเจกต์:",
-                    f_pending: "หัวข้อที่รออยู่:",
-                    f_expected_date: "วันที่คาดหวัง:",
+                    f_project: "<span class='text-danger'>*</span> ชื่อโปรเจกต์:",
+                    f_pending: "หัวข้อที่รออยู่ (Optional):",
+                    f_expected_date: "วันที่คาดหวัง (Optional):",
                     f_item_list: "รายการสินค้า:",
                     f_vehicle: "ป้ายทะเบียน/เลขตู้:",
                     f_dep_time: "เวลาเดินทางออก:",
-                    f_leave_type: "ประเภทการลา (ลาป่วย/ลากิจ/ลาพักร้อน):",
-                    f_leave_period: "ระยะเวลา (วันที่เริ่ม - วันที่สิ้นสุด):",
-                    f_leave_reason: "เหตุผลในการลา (โดยสังเขป):",
-                    f_amount: "จำนวนเงิน:",
-                    f_description: "รายละเอียดการเบิก:",
-                    f_receipt: "หลักฐาน (เช่น ใบเสร็จ/ใบจอง):",
+                    f_leave_type: "<span class='text-danger'>*</span> ประเภทการลา (ลาป่วย/กิจ/พักร้อน):",
+                    f_leave_period: "<span class='text-danger'>*</span> ระยะเวลา (เริ่ม - สิ้นสุด):",
+                    f_leave_reason: "<span class='text-danger'>*</span> เหตุผลในการลา:",
+                    f_amount: "<span class='text-danger'>*</span> จำนวนเงิน:",
+                    f_description: "<span class='text-danger'>*</span> รายละเอียดการเบิก:",
+                    f_receipt: "ชื่อไฟล์/เอกสารหลักฐานที่แนบ (Optional):",
                     f_name: "ชื่อ-นามสกุล:",
                     f_pos: "ตำแหน่ง:",
                     f_join_date: "วันที่เริ่มงาน:",
                     f_intro: "แนะนำตัวสั้นๆ:",
-                    f_task_name: "ชื่องาน/โปรเจกต์ที่เสร็จ:",
-                    f_sent_item: "สิ่งที่ส่ง/ดำเนินการให้:",
-                    f_remark: "หมายเหตุเพิ่มเติม:",
-                    f_equip_name: "ชื่ออุปกรณ์ที่ต้องการเบิก:",
-                    f_equip_reason: "เหตุผลความจำเป็น:",
-                    f_issue_desc: "รายละเอียดปัญหา/อาการเสีย:",
-                    f_issue_impact: "ผลกระทบต่อการทำงาน:",
+                    f_task_name: "<span class='text-danger'>*</span> ชื่องาน/โปรเจกต์ที่เสร็จ:",
+                    f_sent_item: "<span class='text-danger'>*</span> สิ่งที่ส่ง/ดำเนินการให้:",
+                    f_remark: "หมายเหตุเพิ่มเติม (Optional):",
+                    f_equip_name: "<span class='text-danger'>*</span> ชื่ออุปกรณ์ที่ต้องการเบิก:",
+                    f_equip_reason: "<span class='text-danger'>*</span> เหตุผลความจำเป็น:",
+                    f_issue_desc: "<span class='text-danger'>*</span> รายละเอียดปัญหา/อาการเสีย:",
+                    f_issue_impact: "ผลกระทบต่อการทำงาน (Optional):",
                     warn_th: "<i class='bi bi-exclamation-triangle-fill text-warning'></i> กรุณาพิมพ์ภาษาไทยเพื่อให้แปลแม่นยำที่สุด",
                     warn_jp: "<i class='bi bi-exclamation-triangle-fill text-warning'></i> 日本語を入力してください (正確な翻訳のため)",
                     opt_rec_mgr: "หัวหน้า (Manager)",
@@ -902,13 +904,13 @@
                     opt_type_email_action_taken: "対応・送付完了報告 (Action Taken/Sent)",
                     opt_type_email_gen: "一般ビジネスメール (General)",
                     opt_type_email_follow: "進捗確認メール (Follow-up)",
-                    f_work_done: "完了した作業:",
-                    f_issues: "問題点・改善点:",
-                    f_next_week: "来週の予定:",
-                    f_today: "今日の活動:",
-                    f_tomorrow: "明日の予定:",
-                    f_subject: "件名 (任意):",
-                    f_body: "主な内容:",
+                    f_work_done: "<span class='text-danger'>*</span> 完了した作業:",
+                    f_issues: "問題点・改善点 (任意/Optional):",
+                    f_next_week: "来週の予定 (任意/Optional):",
+                    f_today: "<span class='text-danger'>*</span> 今日の活動:",
+                    f_tomorrow: "明日の予定 (任意/Optional):",
+                    f_subject: "件名 (任意/Optional):",
+                    f_body: "<span class='text-danger'>*</span> 主な内容:",
                     f_status: "現在の在庫・状況:",
                     f_lot_no: "ロット番号:",
                     f_species: "木材の種類:",
@@ -917,33 +919,33 @@
                     f_met_person: "面談相手:",
                     f_discussion: "主な協議事項:",
                     f_next_step: "今後の予定:",
-                    f_project: "案件名:",
-                    f_pending: "保留事項:",
-                    f_expected_date: "予定日:",
+                    f_project: "<span class='text-danger'>*</span> 案件名:",
+                    f_pending: "保留事項 (任意/Optional):",
+                    f_expected_date: "予定日 (任意/Optional):",
                     f_item_list: "品目リスト:",
                     f_vehicle: "車番/コンテナ番号:",
                     f_dep_time: "出発時刻:",
-                    f_leave_type: "休暇の種類 (病欠・用事・有給):",
-                    f_leave_period: "期間 (開始日 - 終了日):",
-                    f_leave_reason: "理由 (簡潔に):",
+                    f_leave_type: "<span class='text-danger'>*</span> 休暇の種類 (病欠・用事・有給):",
+                    f_leave_period: "<span class='text-danger'>*</span> 期間 (開始日 - 終了日):",
+                    f_leave_reason: "<span class='text-danger'>*</span> 理由:",
                     opt_type_leave: "休暇連絡メール (Leave Notification)",
                     opt_type_reimburse: "経費精算 (Reimbursement)",
                     opt_type_request_equip: "備品申請 (Equipment Request)",
                     opt_type_repair: "修理・ITサポート依頼 (Maintenance/IT)",
-                    f_amount: "金額:",
-                    f_description: "経費の内容:",
-                    f_receipt: "証憑 (領収書など):",
+                    f_amount: "<span class='text-danger'>*</span> 金額:",
+                    f_description: "<span class='text-danger'>*</span> 経費の内容:",
+                    f_receipt: "添付する証憑・ファイル名 (任意/Optional):",
                     f_name: "氏名:",
                     f_pos: "役職:",
                     f_join_date: "入社日:",
                     f_intro: "簡潔な紹介:",
-                    f_task_name: "完了した作業・案件名:",
-                    f_sent_item: "送付物・対応内容:",
-                    f_remark: "特記事項:",
-                    f_equip_name: "申請する備品名:",
-                    f_equip_reason: "必要な理由:",
-                    f_issue_desc: "不具合の詳細・症状:",
-                    f_issue_impact: "業務への影響:",
+                    f_task_name: "<span class='text-danger'>*</span> 完了した作業・案件名:",
+                    f_sent_item: "<span class='text-danger'>*</span> 送付物・対応内容:",
+                    f_remark: "特記事項 (任意/Optional):",
+                    f_equip_name: "<span class='text-danger'>*</span> 申請する備品名:",
+                    f_equip_reason: "<span class='text-danger'>*</span> 必要な理由:",
+                    f_issue_desc: "<span class='text-danger'>*</span> 不具合の詳細・症状:",
+                    f_issue_impact: "業務への影響 (任意/Optional):",
                     warn_th: "<i class='bi bi-exclamation-triangle-fill text-warning'></i> タイ語を入力してください",
                     warn_jp: "<i class='bi bi-exclamation-triangle-fill text-warning'></i> 日本語を入力してください",
                     opt_rec_mgr: "上司・マネージャー (Manager)",
@@ -1006,20 +1008,15 @@
                 if (cat === 'reports') {
                     options = [
                         { val: 'nippou', id: 'opt_type_nippou' },
-                        { val: 'weekly_report', id: 'opt_type_weekly' },
-                        { val: 'timber_status', id: 'opt_type_timber' },
-                        { val: 'quality_claim', id: 'opt_type_quality' }
+                        { val: 'weekly_report', id: 'opt_type_weekly' }
                     ];
                 } else if (cat === 'emails') {
                     options = [
                         { val: 'email_task_done', id: 'opt_type_email_task_done' },
                         { val: 'email_action_taken', id: 'opt_type_email_action_taken' },
-                        { val: 'leave_request', id: 'opt_type_leave' },
                         { val: 'email_general', id: 'opt_type_email_gen' },
-                        { val: 'email_follow_up', id: 'opt_type_email_follow' }
-                    ];
-                } else if (cat === 'admin') {
-                    options = [
+                        { val: 'email_follow_up', id: 'opt_type_email_follow' },
+                        { val: 'leave_request', id: 'opt_type_leave' },
                         { val: 'reimbursement', id: 'opt_type_reimburse' },
                         { val: 'request_equip', id: 'opt_type_request_equip' },
                         { val: 'repair', id: 'opt_type_repair' }
@@ -1130,7 +1127,7 @@
                     fields = [
                         { id: 'f1', label: t.f_amount, key: 'amount', rows: 1 },
                         { id: 'f2', label: t.f_description, key: 'desc', rows: 2 },
-                        { id: 'f3', label: t.f_receipt, key: 'receipt_ref', rows: 1 }
+                        { id: 'f3', label: t.f_receipt, key: 'receipt_ref', rows: 1, ph: currentLang === 'th' ? "เช่น 'ใบเสร็จทางด่วน 2 ใบ' หรือ 'สลิปโอนเงิน'" : "例：タクシー領収書、振込明細書など" }
                     ];
                 } else if (type === 'request_equip') {
                     fields = [
@@ -1153,8 +1150,7 @@
                 const cat = document.getElementById('docCategory').value;
                 if (hintEl) {
                     if (cat === 'emails') hintEl.innerHTML = t.docs_hint_email;
-                    else if (cat === 'reports') hintEl.innerHTML = t.docs_hint_report;
-                    else hintEl.innerHTML = t.docs_hint_admin;
+                    else hintEl.innerHTML = t.docs_hint_report;
                 }
 
                 container.innerHTML = fields.map(f => `
@@ -1254,7 +1250,7 @@
                 setUI('ui-btn-docs', t.btn_docs);
 
                 // Update Select Options
-                ['opt-cat-reports', 'opt-cat-emails', 'opt-cat-admin',
+                ['opt-cat-reports', 'opt-cat-emails',
                     'opt-rec-mgr', 'opt-rec-sen', 'opt-rec-cli', 'opt-rec-col', 'opt-rec-gen'
                 ].forEach(id => setUI(id, t[id.replace(/-/g, '_')]));
 
@@ -1441,7 +1437,7 @@
                     if (pdfBtn) pdfBtn.style.display = (docCat === 'reports' || docCat === 'admin') ? 'inline-block' : 'none';
                 } else if (mode === 'glossary') {
                     document.getElementById('glossTermJP').innerHTML = `${data.term_main} <span class="mx-2 text-muted">↔</span> ${data.term_target}`;
-                    document.getElementById('glossReading').innerText = data.reading ? `[${data.reading}]` : "";
+                    document.getElementById('glossReading').innerText = data.reading || "";
                     document.getElementById('glossDef').innerText = data.definition;
                     document.getElementById('glossExJP').innerText = data.example_jp;
                     document.getElementById('glossExTH').innerText = data.example_th;
@@ -1503,8 +1499,34 @@
                     .replace(/\*\*|__/g, '')
                     .replace(/---/g, '');
 
+                const fallbackCopy = (text) => {
+                    const textArea = document.createElement("textarea");
+                    textArea.value = text;
+                    textArea.style.position = "fixed";
+                    textArea.style.opacity = "0";
+                    document.body.appendChild(textArea);
+                    textArea.focus();
+                    textArea.select();
+                    try {
+                        const successful = document.execCommand('copy');
+                        textArea.remove();
+                        if (!successful) throw new Error('execCommand failed');
+                    } catch (err) {
+                        textArea.remove();
+                        throw err;
+                    }
+                };
+
                 try {
-                    await navigator.clipboard.writeText(cleanText);
+                    if (navigator.clipboard && window.isSecureContext) {
+                        try {
+                            await navigator.clipboard.writeText(cleanText);
+                        } catch (e) {
+                            fallbackCopy(cleanText);
+                        }
+                    } else {
+                        fallbackCopy(cleanText);
+                    }
                     showToast(currentLang === 'th' ? 'คัดลอกข้อความสำเร็จ!' : 'テキストをコピーしました！');
                 } catch (err) {
                     console.error('Failed to copy: ', err);
