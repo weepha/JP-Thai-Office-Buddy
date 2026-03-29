@@ -40,14 +40,22 @@ def call_gemini_api(prompt, require_json=False):
     last_error_data = {"error": "ไม่สามารถติดต่อ AI ได้ในขณะนี้"}
     models_to_try = ["gemini-2.0-flash", "gemini-flash-latest"]
     
+    # Safety settings to prevent accidental blocks of business Japanese (Keigo)
+    safety_settings = [
+        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+    ]
+
     for model_name in models_to_try:
         for key in current_keys:
             try:
                 url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={key}"
                 gen_config = {
-                    "temperature": 0.0,
-                    "top_p": 1,
-                    "top_k": 1,
+                    "temperature": 0.2,
+                    "top_p": 0.95,
+                    "top_k": 40,
                     "max_output_tokens": 2048,
                 }
                 if require_json:
@@ -55,16 +63,31 @@ def call_gemini_api(prompt, require_json=False):
                 
                 payload = {
                     "contents": [{"parts": [{"text": prompt}]}], 
-                    "generationConfig": gen_config
+                    "generationConfig": gen_config,
+                    "safetySettings": safety_settings
                 }
                 
                 response = requests.post(url, headers={'Content-Type': 'application/json'}, json=payload, timeout=30)
                 res_json = response.json()
                 
                 if response.status_code == 200:
-                    cand = res_json.get('candidates', [{}])[0]
-                    if 'content' in cand:
-                        return cand['content']['parts'][0]['text']
+                    candidates = res_json.get('candidates', [])
+                    if not candidates:
+                         continue
+
+                    cand = candidates[0]
+                    # Check finish reason
+                    finish_reason = cand.get('finishReason', '')
+                    if finish_reason == 'SAFETY':
+                        last_error_data = {"error": "AI Safety Block: ปัญญาประดิษฐ์ปฏิเสธการตอบเนื่องจากนโยบายความปลอดภัย (Safety Filter)"}
+                        continue
+
+                    if 'content' in cand and 'parts' in cand['content']:
+                        text = cand['content']['parts'][0].get('text', '').strip()
+                        if text:
+                            return text
+                        else:
+                            continue # Try next key/model if text is empty
                     continue
                 
                 elif response.status_code == 429:

@@ -1318,6 +1318,10 @@
                 setUI('ui-btn-copy-polite', t.btn_copy);
 
                 ['opt-pol-mgr', 'opt-pol-cli', 'opt-pol-sen', 'opt-pol-gen'].forEach(id => setUI(id, t[id.replace(/-/g, '_')]));
+                
+                // Localization for result labels
+                setUI('ui-res-docs-label', t.res_docs_label);
+                setUI('ui-res-read-title', t.res_read_title);
             }
 
             async function runAction(endpoint, mode) {
