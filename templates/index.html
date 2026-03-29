@@ -1422,7 +1422,18 @@
                     }
 
                     const response = await fetch(endpoint, { method, headers, body: payload });
-                    const data = await response.json();
+                    let data;
+                    if (response.ok) {
+                        data = await response.json();
+                    } else {
+                        // Server error (4xx/5xx) - might be text instead of JSON
+                        const errBody = await response.text();
+                        try {
+                            data = JSON.parse(errBody);
+                        } catch (e) {
+                            data = { error: errBody || "Unknown Server Error" };
+                        }
+                    }
 
                     if (data.error) throw new Error(data.error);
 

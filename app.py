@@ -14,7 +14,9 @@ CORS(app)
 
 @app.errorhandler(500)
 def handle_500(e):
-    return "💡 ระบบประมวลผลติดขัดชั่วคราว (500 Error) กรุณากดลองใหม่อีกครั้งครับ (หรือส่งข้อความที่สั้นลง)", 500
+    # Always return JSON to avoid frontend parsing errors
+    error_msg = str(e) if e else "Internal Server Error"
+    return jsonify({"error": f"💡 ระบบประมวลผลข้อเสนอปัญหานี้ไม่ได้ชั่วคราว: {error_msg} (กรุณาลองลดจำนวนข้อความหรือถอดไฟล์ PDF ออกครับ)"}), 500
 
 # --- Helper Functions ---
 
@@ -251,9 +253,14 @@ def generate_doc():
             if ref_file.filename.endswith(('.txt', '.md')):
                 reference_text = ref_file.read().decode('utf-8')
             elif ref_file.filename.lower().endswith('.pdf'):
-                reader = PdfReader(ref_file)
-                for page in reader.pages:
-                    reference_text += page.extract_text() + "\n"
+                try:
+                    reader = PdfReader(ref_file)
+                    for page in reader.pages:
+                        page_text = page.extract_text()
+                        if page_text:
+                            reference_text += page_text + "\n"
+                except Exception as e:
+                    return jsonify({"error": f"⚠️ ไม่สามารถอ่านข้อมูลจากไฟล์ PDF นี้ได้ครับ (Error: {str(e)}) กรุณาลองใช้ไฟล์ .txt หรือพิมพ์ข้อมูลโดยตรงแทนครับ"})
         
         if not topic and not reference_text:
              return jsonify({"error": "กรุณาระบุหัวข้อหรือแนบไฟล์ครับ"})
