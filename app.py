@@ -259,7 +259,12 @@ def generate_doc():
         Date: {date_val}
         Recipient: {recipient}
         Context: {context_str}
-        Instructions: Use formal language (Keigo for JP), preserve structure, and respond with ONLY the document text.
+        Instructions: 
+        - Use formal language (Keigo for JP if target is Japanese).
+        - Preserve document structure and formatting.
+        - IMPORTANT: Translate ALL information in the Context (including names, locations, and details) into {target_lang}.
+        - For Thai names in a Japanese document, convert them to Katakana (e.g., Somchai -> ソムチャイ) or Romaji as appropriate.
+        - Respond with ONLY the finalized document text.
         """
         
         result = call_gemini_api(prompt_text)
