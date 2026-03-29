@@ -201,31 +201,33 @@ def translate():
 
 @app.route('/verify_content', methods=['POST'])
 def verify_content():
-    text_input = request.form.get('text_input')
-    ui_lang = request.form.get('ui_lang', 'th')
-    if not text_input:
-        return jsonify({"error": "No text provided"}), 400
+    try:
+        text_input = request.form.get('text_input')
+        if not text_input:
+            return jsonify({"error": "No text provided"}), 400
 
-    src_lang, dst_lang = ("ภาษาญี่ปุ่น", "ภาษาไทย") if ui_lang == 'th' else ("ภาษาไทย", "ภาษาญี่ปุ่น")
-    prompt_text = (
-        f"Please translate the following business document from {src_lang} to {dst_lang} completely and accurately.\n"
-        "CRITICAL INSTRUCTIONS:\n"
-        "1. Translate EVERYTHING (dates, names, greetings) without exception.\n"
-        "2. Preserve all formatting, indentation, and line breaks EXACTLY as the original.\n"
-        "3. DO NOT SUMMARIZE, omit, or change any details. The output must be a full, faithful translation.\n"
-        "4. Respond ONLY with the translated text.\n\n"
-        f"ORIGINAL DOCUMENT:\n\n{text_input}"
-    )
-    
-    result = call_gemini_api(prompt_text)
-    if isinstance(result, dict) and "error" in result:
-        return jsonify(result), 500
+        # Verification always goes from Japanese back to Thai for clarity
+        prompt_text = (
+            "Please translate the following business document from Japanese to Thai completely and accurately.\n"
+            "CRITICAL INSTRUCTIONS:\n"
+            "1. Translate EVERYTHING (dates, names, greetings) without exception.\n"
+            "2. Preserve all formatting, indentation, and line breaks EXACTLY as the original.\n"
+            "3. DO NOT SUMMARIZE, omit, or change any details. The output must be a full, faithful translation.\n"
+            "4. Respond ONLY with the translated text.\n\n"
+             f"ORIGINAL DOCUMENT (JAPANESE):\n\n{text_input}"
+        )
         
-    res_text = result.strip() if result else ""
-    if res_text.startswith("```"):
-        res_text = re.sub(r'^```[a-zA-Z]*\n|```$', '', res_text, flags=re.MULTILINE).strip()
-    
-    return res_text
+        result = call_gemini_api(prompt_text)
+        if isinstance(result, dict) and "error" in result:
+            return result.get('error', 'AI Connection Error'), 500
+            
+        res_text = result.strip() if result else ""
+        if res_text.startswith("```"):
+            res_text = re.sub(r'^```[a-zA-Z]*\n|```$', '', res_text, flags=re.MULTILINE).strip()
+        
+        return res_text
+    except Exception as e:
+        return f"Error: {str(e)}", 500
 
 @app.route('/generate_doc', methods=['POST'])
 def generate_doc():
