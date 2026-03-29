@@ -60,7 +60,7 @@ def call_gemini_api(prompt, require_json=False):
                     "temperature": 0.2,
                     "top_p": 0.95,
                     "top_k": 40,
-                    "max_output_tokens": 2048,
+                    "max_output_tokens": 4096,
                 }
                 if require_json:
                     gen_config["responseMimeType"] = "application/json"
@@ -212,13 +212,14 @@ def verify_content():
 
         # Verification always goes from Japanese back to Thai for clarity
         prompt_text = (
-            "Please translate the following business document from Japanese to Thai VERBATIM.\n"
-            "CRITICAL INSTRUCTIONS:\n"
-            "1. This is for accuracy verification. DO NOT SUMMARIZE or condense the text.\n"
-            "2. Translate EVERY SINGLE LINE, including dates, names, and formal greetings.\n"
-            "3. If there is a list or signature, preserve it exactly as it is.\n"
-            "4. The output must be a full, word-for-word faithful translation into professional Thai.\n"
-            "5. Respond ONLY with the translated text.\n\n"
+            "Translate the following Japanese document into Thai VERBATIM, LINE-BY-LINE.\n"
+            "STRICT RULES:\n"
+            "1. DO NOT SUMMARY. DO NOT CONDENSE. DO NOT OMIT ANY DETAILS.\n"
+            "2. Translate EVERY SINGLE LINE, word-for-word.\n"
+            "3. If there is a list (1, 2, 3), you MUST translate every item.\n"
+            "4. Match the TOTAL NUMBER OF LINES in the original document.\n"
+            "5. The user is checking for accuracy. If you skip any line, the user will fail. Be exhaustive.\n"
+            "6. Respond ONLY with the translated text.\n\n"
              f"ORIGINAL DOCUMENT (JAPANESE):\n\n{text_input}"
         )
         
