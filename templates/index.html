@@ -1410,50 +1410,6 @@
                         headers = { 'Content-Type': 'application/json' };
                     }
 
-                    // Use streaming for docs and verify_content if possible
-                    if (mode === 'docs' || mode === 'polite') { // Added polite for future if needed
-                         // Handled in a separate stream logic below or unified
-                    }
-
-                    // Special handling for Documentation (Streaming)
-                    if (mode === 'docs') {
-                        const response = await fetch(`${endpoint}?stream=true`, { method, headers, body: payload });
-                        const reader = response.body.getReader();
-                        const decoder = new TextDecoder();
-                        document.getElementById('resDocsArea').style.display = 'block';
-                        const resDocs = document.getElementById('resDocs');
-                        resDocs.innerText = '';
-                        
-                        let accumulatedText = "";
-
-                        while (true) {
-                            const { done, value } = await reader.read();
-                            if (done) break;
-                            
-                            const chunk = decoder.decode(value, { stream: true });
-                            const lines = chunk.split('\n');
-                            for (const line of lines) {
-                                if (line.startsWith('data: ')) {
-                                    try {
-                                        const jsonStr = line.substring(6);
-                                        const data = JSON.parse(jsonStr);
-                                        if (data.error) throw new Error(data.error);
-                                        if (data.chunk) {
-                                            accumulatedText += data.chunk;
-                                            resDocs.innerText = accumulatedText;
-                                            // Auto-scroll as text grows
-                                            resDocs.parentElement.scrollIntoView({ behavior: 'auto', block: 'end' });
-                                        }
-                                    } catch (e) { continue; }
-                                }
-                            }
-                        }
-                        
-                        // Final scroll to result
-                        document.getElementById('resDocsArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        return; // Done with streaming
-                    }
-
                     const response = await fetch(endpoint, { method, headers, body: payload });
                     const data = await response.json();
 
@@ -1689,39 +1645,14 @@
                     formData.append('text_input', jpText);
                     formData.append('ui_lang', currentLang);
 
-                    const response = await fetch('/verify_content?stream=true', {
+                    const response = await fetch('/verify_content', {
                         method: 'POST',
                         body: formData
                     });
-
-                    const reader = response.body.getReader();
-                    const decoder = new TextDecoder();
-                    resThai.innerText = '';
-                    
-                    let accumulatedText = "";
-
-                    while (true) {
-                        const { done, value } = await reader.read();
-                        if (done) break;
-                        
-                        const chunk = decoder.decode(value, { stream: true });
-                        const lines = chunk.split('\n');
-                        for (const line of lines) {
-                            if (line.startsWith('data: ')) {
-                                try {
-                                    const jsonStr = line.substring(6);
-                                    const data = JSON.parse(jsonStr);
-                                    if (data.error) throw new Error(data.error);
-                                    if (data.chunk) {
-                                        accumulatedText += data.chunk;
-                                        resThai.innerText = accumulatedText;
-                                    }
-                                } catch (e) { continue; }
-                            }
-                        }
-                    }
+                    const text = await response.text();
+                    document.getElementById('resDocsThai').innerText = text;
                 } catch (err) {
-                    resThai.innerText = "Error: " + err.message;
+                    document.getElementById('resDocsThai').innerText = "Error: " + err.message;
                 }
             }
 

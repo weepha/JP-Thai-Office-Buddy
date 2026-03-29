@@ -80,56 +80,6 @@ def call_gemini_api(prompt, require_json=False):
             
     return last_error_data
 
-def call_gemini_api_stream(prompt):
-    """Generator for streaming Gemini API responses."""
-    current_keys = get_api_keys()
-    if not current_keys:
-        yield f"data: {json.dumps({'error': 'No API Key found'})}\n\n"
-        return
-        
-    models_to_try = ["gemini-2.0-flash", "gemini-flash-latest"]
-    
-    for model_name in models_to_try:
-        for key in current_keys:
-            try:
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:streamGenerateContent?key={key}"
-                payload = {
-                    "contents": [{"parts": [{"text": prompt}]}], 
-                    "generationConfig": {
-                        "temperature": 0.0,
-                        "top_p": 1,
-                        "top_k": 1,
-                        "max_output_tokens": 2048,
-                    }
-                }
-                
-                response = requests.post(url, headers={'Content-Type': 'application/json'}, json=payload, timeout=30, stream=True)
-                
-                if response.status_code == 200:
-                    for line in response.iter_lines():
-                        if line:
-                            decoded_line = line.decode('utf-8')
-                            # Handle different streaming JSON formats from Google
-                            try:
-                                # Remove the leading "[", "]", or "," if it exists in the chunked JSON stream
-                                clean_line = decoded_line.strip().lstrip(',[').rstrip('],')
-                                if not clean_line: continue
-                                chunk_json = json.loads(clean_line)
-                                text_chunk = chunk_json.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', '')
-                                if text_chunk:
-                                    yield f"data: {json.dumps({'chunk': text_chunk})}\n\n"
-                            except Exception:
-                                continue
-                    return # Successfully streamed
-                
-                elif response.status_code == 429:
-                    continue # Try next key
-                
-            except Exception:
-                continue
-                
-    yield f"data: {json.dumps({'error': 'Streaming failed after retries'})}\n\n"
-
 # --- Routes ---
 
 @app.route('/')
@@ -252,11 +202,6 @@ def verify_content():
     if res_text.startswith("```"):
         res_text = re.sub(r'^```[a-zA-Z]*\n|```$', '', res_text, flags=re.MULTILINE).strip()
     
-    # Support for legacy non-stream POST but also offer streaming if requested
-    if request.args.get('stream') == 'true':
-        from flask import Response
-        return Response(call_gemini_api_stream(prompt_text), mimetype='text/event-stream')
-
     return res_text
 
 @app.route('/generate_doc', methods=['POST'])
