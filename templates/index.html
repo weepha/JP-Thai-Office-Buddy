@@ -753,7 +753,7 @@
         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
         <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
         <script>
-            let currentLang = 'th';
+            let currentLang = localStorage.getItem('appLang') || 'th';
             let transMode = 'th-jp'; // New state for translation direction
             const translations = {
                 th: {
@@ -1048,6 +1048,7 @@
 
             function toggleLanguage() {
                 currentLang = currentLang === 'th' ? 'jp' : 'th';
+                localStorage.setItem('appLang', currentLang);
                 updateUI();
                 updateSubtypes(); // Refresh subtypes localization
                 validateLanguage();
@@ -1181,6 +1182,13 @@
             }
 
             window.onload = () => {
+                // Restore last used translation mode
+                const savedTransMode = localStorage.getItem('transModeChoice');
+                if (savedTransMode) {
+                    const radio = document.querySelector(`input[name="transModeOpt"][value="${savedTransMode}"]`);
+                    if (radio) radio.checked = true;
+                }
+
                 updateUI();
                 updateSubtypes(); // This will also call updateDocFields
 
@@ -1189,6 +1197,13 @@
                 document.getElementById('docDate').value = today;
 
                 document.getElementById('docType').addEventListener('change', updateDocFields);
+
+                // Auto-save translation mode choice
+                document.querySelectorAll('input[name="transModeOpt"]').forEach(opt => {
+                    opt.addEventListener('change', (e) => {
+                        localStorage.setItem('transModeChoice', e.target.value);
+                    });
+                });
 
                 // Auto-scroll for translation input on mobile typing
                 const thaiInput = document.getElementById('thaiInput');
