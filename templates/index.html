@@ -1332,7 +1332,7 @@
 
                 btn.disabled = true;
                 // Hide and clear previous results to avoid showing stale data
-                const resElements = ['resCas', 'resPol', 'resBus', 'resDocs', 'resDocsThai', 'glossTermJP', 'glossReading', 'glossDef', 'glossExJP', 'glossExTH', 'ocrOrig', 'ocrTrans', 'politeAnalysis', 'politeSuggest', 'politeExplain'];
+                const resElements = ['resCas', 'resPol', 'resBus', 'resDocs', 'resDocsThai', 'glossTermJP', 'glossReading', 'glossDef', 'glossExJP', 'glossExTH', 'politeAnalysis', 'politeSuggest', 'politeExplain'];
                 resElements.forEach(id => {
                     const el = document.getElementById(id);
                     if (el) el.innerText = '';
@@ -1487,10 +1487,6 @@
                     document.getElementById('glossExJP').innerText = data.example_jp;
                     document.getElementById('glossExTH').innerText = data.example_th;
                     document.getElementById('resGlossary').style.display = 'block';
-                } else if (mode === 'ocr') {
-                    document.getElementById('ocrOrig').innerText = data.original_text;
-                    document.getElementById('ocrTrans').innerText = data.translated_text;
-                    document.getElementById('resOCR').style.display = 'block';
                 } else if (mode === 'polite') {
                     document.getElementById('politeAnalysis').innerText = data.analysis;
                     document.getElementById('politeSuggest').innerText = data.suggestion;
