@@ -841,6 +841,7 @@
                     res_docs_label: "ผลการร่างเอกสาร",
                     res_read_title: "ผลการแปล / 翻訳結果",
                     err_prefix: "เกิดข้อผิดพลาด: ",
+                    err_overload: "💡 เซิร์ฟเวอร์ทำงานหนักเกินไปหรือไฟล์มีขนาดใหญ่เกินครับ (กรุณาลองพิมพ์ข้อความโดยตรงแทนการแนบไฟล์ PDF ครับ)",
                     f_equip_name: "<span class='text-danger'>*</span> ชื่ออุปกรณ์ที่ต้องการเบิก:",
                     f_equip_reason: "<span class='text-danger'>*</span> เหตุผลความจำเป็น:",
                     f_issue_desc: "<span class='text-danger'>*</span> รายละเอียดปัญหา/อาการเสีย:",
@@ -1010,7 +1011,8 @@
                     opt_pol_gen: "一般 (General)",
                     res_docs_label: "書類作成結果",
                     res_read_title: "翻訳結果 / Result",
-                    err_prefix: "エラーが発生しました: "
+                    err_prefix: "エラーが発生しました: ",
+                    err_overload: "💡 サーバーの負荷が高いか、ファイルサイズが大きすぎます (PDFを添付せずにテキストを直接入力してみてください)"
                 }
 
             };
@@ -1429,10 +1431,14 @@
                     } else {
                         // Server error (4xx/5xx) - might be text instead of JSON
                         const errBody = await response.text();
-                        try {
-                            data = JSON.parse(errBody);
-                        } catch (e) {
-                            data = { error: errBody || "Unknown Server Error" };
+                        if (errBody.includes("<html>")) {
+                            data = { error: translations[currentLang].err_overload };
+                        } else {
+                            try {
+                                data = JSON.parse(errBody);
+                            } catch (e) {
+                                data = { error: errBody || "Unknown Server Error" };
+                            }
                         }
                     }
 

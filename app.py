@@ -10,6 +10,7 @@ from dotenv import load_dotenv
 # Initialize Flask app
 load_dotenv()
 app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Max 16MB for safety
 CORS(app)
 
 @app.errorhandler(500)
