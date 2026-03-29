@@ -747,6 +747,11 @@
             </div>
         </div>
 
+        <!-- Footer -->
+        <div class="text-center mt-5 mb-4 text-muted small" style="opacity: 0.6;">
+            <p>&copy; 2026 JP-Thai Office Buddy (v1.1.5) | <span class="badge bg-secondary">Updated: 16:55 (Final Stable)</span></p>
+        </div>
+
         <!-- Toast Container -->
         <div class="toast-container" id="toastContainer"></div>
 
@@ -1660,11 +1665,19 @@
                         method: 'POST',
                         body: formData
                     });
+                    
+                    if (!response.ok) {
+                        const errorText = await response.text();
+                        throw new Error(errorText || "Server error");
+                    }
+                    
                     const text = await response.text();
                     document.getElementById('resDocsThai').innerText = text;
                 } catch (err) {
-                    document.getElementById('resDocsThai').innerText = "Error: " + err.message;
+                    console.error('Verify Error:', err);
+                    document.getElementById('resDocsThai').innerText = "💡 ปัญหาชั่วคราว: " + err.message + "\n(กรุณาลองกดปุ่มตรวจสอบอีกครั้งครับ)";
                 }
+
             }
 
             if ('serviceWorker' in navigator) {

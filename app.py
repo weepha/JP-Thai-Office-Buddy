@@ -12,6 +12,10 @@ load_dotenv()
 app = Flask(__name__)
 CORS(app)
 
+@app.errorhandler(500)
+def handle_500(e):
+    return "💡 ระบบประมวลผลติดขัดชั่วคราว (500 Error) กรุณากดลองใหม่อีกครั้งครับ (หรือส่งข้อความที่สั้นลง)", 500
+
 # --- Helper Functions ---
 
 def try_extract_json(text):
