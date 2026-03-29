@@ -212,12 +212,13 @@ def verify_content():
 
         # Verification always goes from Japanese back to Thai for clarity
         prompt_text = (
-            "Please translate the following business document from Japanese to Thai completely and accurately.\n"
+            "Please translate the following business document from Japanese to Thai VERBATIM.\n"
             "CRITICAL INSTRUCTIONS:\n"
-            "1. Translate EVERYTHING (dates, names, greetings) without exception.\n"
-            "2. Preserve all formatting, indentation, and line breaks EXACTLY as the original.\n"
-            "3. DO NOT SUMMARIZE, omit, or change any details. The output must be a full, faithful translation.\n"
-            "4. Respond ONLY with the translated text.\n\n"
+            "1. This is for accuracy verification. DO NOT SUMMARIZE or condense the text.\n"
+            "2. Translate EVERY SINGLE LINE, including dates, names, and formal greetings.\n"
+            "3. If there is a list or signature, preserve it exactly as it is.\n"
+            "4. The output must be a full, word-for-word faithful translation into professional Thai.\n"
+            "5. Respond ONLY with the translated text.\n\n"
              f"ORIGINAL DOCUMENT (JAPANESE):\n\n{text_input}"
         )
         
