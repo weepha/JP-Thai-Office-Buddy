@@ -839,8 +839,8 @@
                     f_sent_item: "<span class='text-danger'>*</span> สิ่งที่ส่ง/ดำเนินการให้:",
                     f_remark: "หมายเหตุเพิ่มเติม (Optional):",
                     res_docs_label: "ผลการร่างเอกสาร",
-                    res_read_title: "ผลการแปล / 翻訳結果"
-,
+                    res_read_title: "ผลการแปล / 翻訳結果",
+                    err_prefix: "เกิดข้อผิดพลาด: ",
                     f_equip_name: "<span class='text-danger'>*</span> ชื่ออุปกรณ์ที่ต้องการเบิก:",
                     f_equip_reason: "<span class='text-danger'>*</span> เหตุผลความจำเป็น:",
                     f_issue_desc: "<span class='text-danger'>*</span> รายละเอียดปัญหา/อาการเสีย:",
@@ -1009,7 +1009,8 @@
                     opt_pol_sen: "先輩・メンター (Mentor)",
                     opt_pol_gen: "一般 (General)",
                     res_docs_label: "書類作成結果",
-                    res_read_title: "翻訳結果 / Result"
+                    res_read_title: "翻訳結果 / Result",
+                    err_prefix: "エラーが発生しました: "
                 }
 
             };
@@ -1443,7 +1444,7 @@
                     if (err.message.includes("429") || err.message.toLowerCase().includes("quota")) {
                         startCooldown(btn);
                     }
-                    alert(currentLang === 'th' ? "เกิดข้อผิดพลาด: " + err.message : "エラーが発生しました: " + err.message);
+                    alert(translations[currentLang].err_prefix + err.message);
                 } finally {
                     if (!btn.hasAttribute('data-cooldown')) {
                         btn.disabled = false;

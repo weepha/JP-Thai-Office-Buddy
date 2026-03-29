@@ -14,9 +14,21 @@ CORS(app)
 
 @app.errorhandler(500)
 def handle_500(e):
-    # Always return JSON to avoid frontend parsing errors
-    error_msg = str(e) if e else "Internal Server Error"
-    return jsonify({"error": f"💡 ระบบประมวลผลข้อเสนอปัญหานี้ไม่ได้ชั่วคราว: {error_msg} (กรุณาลองลดจำนวนข้อความหรือถอดไฟล์ PDF ออกครับ)"}), 500
+    # Try to detect lang from request
+    lang = "th"
+    try:
+        if request.is_json:
+            lang = request.json.get('ui_lang', 'th')
+        else:
+            lang = request.form.get('ui_lang', 'th')
+    except: pass
+    
+    error_msg = str(e) if e else ""
+    if lang == 'jp':
+        msg = f"💡 システムエラーが発生しました: {error_msg} (テキストを短くするか、PDFを外してみてください)"
+    else:
+        msg = f"💡 ระบบประมวลผลข้อเสนอปัญหานี้ไม่ได้ชั่วคราว: {error_msg} (กรุณาลองลดจำนวนข้อความหรือถอดไฟล์ PDF ออกครับ)"
+    return jsonify({"error": msg}), 500
 
 # --- Helper Functions ---
 
@@ -260,7 +272,12 @@ def generate_doc():
                         if page_text:
                             reference_text += page_text + "\n"
                 except Exception as e:
-                    return jsonify({"error": f"⚠️ ไม่สามารถอ่านข้อมูลจากไฟล์ PDF นี้ได้ครับ (Error: {str(e)}) กรุณาลองใช้ไฟล์ .txt หรือพิมพ์ข้อมูลโดยตรงแทนครับ"})
+                    ui_lang = data.get('ui_lang', 'th')
+                    if ui_lang == 'jp':
+                        err_msg = f"⚠️ このPDFファイルを読み取ることができません (Error: {str(e)})。テキスト形式か、直接入力してみてください。"
+                    else:
+                        err_msg = f"⚠️ ไม่สามารถอ่านข้อมูลจากไฟล์ PDF นี้ได้ครับ (Error: {str(e)}) กรุณาลองใช้ไฟล์ .txt หรือพิมพ์ข้อมูลโดยตรงแทนครับ"
+                    return jsonify({"error": err_msg})
         
         if not topic and not reference_text:
              return jsonify({"error": "กรุณาระบุหัวข้อหรือแนบไฟล์ครับ"})
