@@ -212,17 +212,18 @@ def verify_content():
 
         # Verification always goes from Japanese back to Thai for clarity
         prompt_text = (
-            "Translate the following Japanese document into Thai VERBATIM, LINE-BY-LINE.\n"
+            "You are a verbatim translator. Translate the following Japanese document into Thai COMPLETELY from start to finish.\n"
             "STRICT RULES:\n"
-            "1. DO NOT SUMMARY. DO NOT CONDENSE. DO NOT OMIT ANY DETAILS.\n"
-            "2. Translate EVERY SINGLE LINE, word-for-word.\n"
-            "3. If there is a list (1, 2, 3), you MUST translate every item.\n"
-            "4. Match the TOTAL NUMBER OF LINES in the original document.\n"
-            "5. The user is checking for accuracy. If you skip any line, the user will fail. Be exhaustive.\n"
+            "1. DO NOT STOP until you have translated the VERY LAST CHARACTER of the input document.\n"
+            "2. Translate EVERY SINGLE LINE, including formal greetings, dates, and signatures at the bottom.\n"
+            "3. If there is a date (申請日) or name (氏名) at the very end, you MUST translate it.\n"
+            "4. If there are dash lines (----), preserve them as separators.\n"
+            "5. NO SUMMARIZATION or condensation. The user is checking accuracy, so every word matters.\n"
             "6. Respond ONLY with the translated text.\n\n"
              f"ORIGINAL DOCUMENT (JAPANESE):\n\n{text_input}"
         )
         
+        # Increased max_output_tokens is already set to 4096 in call_gemini_api
         result = call_gemini_api(prompt_text)
         if isinstance(result, dict) and "error" in result:
             return result.get('error', 'AI Connection Error'), 500
