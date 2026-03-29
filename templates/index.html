@@ -499,6 +499,7 @@
                                             <div class="d-flex justify-content-between align-items-center mb-2">
                                                 <h6 id="ui-res-read-title" class="mb-0 fw-bold text-primary"><i
                                                         class="bi bi-translate"></i> ผลการแปล / 翻訳結果</h6>
+
                                                 <button class="btn btn-sm btn-link p-0 text-primary"
                                                     onclick="copyText('resRead')"><i class='bi bi-clipboard'></i> <span
                                                         id="ui-btn-copy-read">Copy</span></button>
@@ -837,6 +838,9 @@
                     f_task_name: "<span class='text-danger'>*</span> ชื่องาน/โปรเจกต์ที่เสร็จ:",
                     f_sent_item: "<span class='text-danger'>*</span> สิ่งที่ส่ง/ดำเนินการให้:",
                     f_remark: "หมายเหตุเพิ่มเติม (Optional):",
+                    res_docs_label: "ผลการร่างเอกสาร",
+                    res_read_title: "ผลการแปล / 翻訳結果"
+,
                     f_equip_name: "<span class='text-danger'>*</span> ชื่ออุปกรณ์ที่ต้องการเบิก:",
                     f_equip_reason: "<span class='text-danger'>*</span> เหตุผลความจำเป็น:",
                     f_issue_desc: "<span class='text-danger'>*</span> รายละเอียดปัญหา/อาการเสีย:",
@@ -1003,8 +1007,11 @@
                     opt_pol_mgr: "上司・マネージャー (Manager)",
                     opt_pol_cli: "顧客・クライアント (Client)",
                     opt_pol_sen: "先輩・メンター (Mentor)",
-                    opt_pol_gen: "一般 (General)"
+                    opt_pol_gen: "一般 (General)",
+                    res_docs_label: "書類作成結果",
+                    res_read_title: "翻訳結果 / Result"
                 }
+
             };
 
             function updateFileName(input, targetId) {
