@@ -43,14 +43,14 @@
         }
 
         .hero-section {
-            padding: 80px 0 100px;
+            padding: 40px 0 80px;
             position: relative;
             background: var(--gradient);
             color: white;
             border-bottom-left-radius: 50% 15%;
             border-bottom-right-radius: 50% 15%;
             box-shadow: var(--shadow);
-            margin-bottom: -40px;
+            margin-bottom: -60px;
         }
 
         .main-card {
@@ -294,14 +294,15 @@
         /* --- Comprehensive Mobile UI Overrides --- */
         @media (max-width: 576px) {
             .hero-section {
-                padding: 50px 0 70px;
+                padding: 30px 0 60px;
+                margin-bottom: -40px;
             }
 
             .hero-section img {
-                width: 90px !important;
-                height: 90px !important;
-                border-width: 3px !important;
-                margin-bottom: 1rem !important;
+                width: 75px !important;
+                height: 75px !important;
+                border-width: 2px !important;
+                margin-bottom: 0.5rem !important;
             }
 
             .display-4 {
@@ -366,6 +367,59 @@
             color: #333;
             line-height: 1.6;
         }
+
+        /* --- Print / Save as PDF --- */
+        #pdf-print-area {
+            display: none;
+        }
+        @media print {
+            /* margin: 0 removes browser's auto date/title/URL/page-number headers & footers */
+            @page { margin: 0; size: A4 portrait; }
+            body > *:not(#pdf-print-area) { display: none !important; }
+            #pdf-print-area {
+                display: block !important;
+                font-family: 'Sarabun', 'Noto Sans JP', Arial, sans-serif;
+                font-size: 13pt;
+                line-height: 1.9;
+                color: #222;
+                white-space: pre-wrap;
+                word-wrap: break-word;
+                /* Use padding instead of @page margin to keep content margins */
+                padding: 2cm 2.5cm;
+                margin: 0;
+                box-sizing: border-box;
+            }
+        }
+
+        /* --- AI Status Message --- */
+        .ai-status-msg {
+            display: none;
+            text-align: center;
+            padding: 8px 14px;
+            border-radius: 12px;
+            background: rgba(102, 126, 234, 0.08);
+            color: #667eea;
+            font-size: 0.82rem;
+            font-weight: 600;
+            margin-top: 10px;
+            border: 1px dashed rgba(102, 126, 234, 0.3);
+            animation: statusPulse 1.8s ease-in-out infinite;
+        }
+        @keyframes statusPulse {
+            0%, 100% { opacity: 1; }
+            50%       { opacity: 0.5; }
+        }
+
+        /* --- Phonetic Reading Subtitle --- */
+        .phonetic-reading {
+            display: block;
+            font-size: 0.78rem;
+            font-style: italic;
+            color: #9ca3af;
+            font-weight: 400;
+            margin-top: 4px;
+            letter-spacing: 0.03em;
+        }
     </style>
 </head>
 
@@ -377,8 +431,8 @@
                 ไทย</button>
         </div>
         <div class="container">
-            <img src="/static/logo.png" alt="Office Buddy Logo" class="mb-4 rounded-circle bg-white p-2 shadow-lg"
-                style="width: 120px; height: 120px; object-fit: contain; border: 4px solid var(--glass-border);">
+            <img src="/static/logo.png" alt="Office Buddy Logo" class="mb-3 rounded-circle bg-white p-2 shadow-lg"
+                style="width: 95px; height: 95px; object-fit: contain; border: 4px solid var(--glass-border);">
             <h1 class="display-4 fw-bold" id="ui-hero-title">JP-Thai Office Buddy</h1>
             <p class="lead" id="ui-hero-subtitle">ผู้ช่วย AI สำหรับพนักงานในอุตสาหกรรมไม้ญี่ปุ่น</p>
         </div>
@@ -452,10 +506,12 @@
                                 <span class="spinner-border spinner-border-sm loading-spinner"></span> <span
                                     id="ui-btn-translate">แปลภาษาทันที</span>
                             </button>
+                            <div id="ui-trans-warning" class="validate-warning mt-2"></div>
+                            <div id="statusMsg_translate" class="ai-status-msg"></div>
 
                             <div id="resTranslate" class="mt-4" style="display:none;">
                                 <!-- โหมดแต่งประโยค (3 ระดับ) -->
-                                <div id="resTranslateDraft" class="row g-3">
+                                <div id="resTranslateDraft" class="row g-3" style="display:none;">
                                     <div class="col-md-4">
                                         <div class="result-box h-100 d-flex flex-column">
                                             <div class="d-flex justify-content-between align-items-center mb-2">
@@ -465,6 +521,7 @@
                                                         id="ui-btn-copy-1">Copy</span></button>
                                             </div>
                                             <p id="resCas" class="fw-bold text-primary mb-0"></p>
+                                            <small id="resCasReading" class="phonetic-reading" style="display:none;"></small>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
@@ -476,6 +533,7 @@
                                                         id="ui-btn-copy-2">Copy</span></button>
                                             </div>
                                             <p id="resPol" class="fw-bold text-success mb-0"></p>
+                                            <small id="resPolReading" class="phonetic-reading" style="display:none;"></small>
                                         </div>
                                     </div>
                                     <div class="col-md-4">
@@ -487,6 +545,7 @@
                                                         id="ui-btn-copy-3">Copy</span></button>
                                             </div>
                                             <p id="resBus" class="fw-bold text-dark mb-0"></p>
+                                            <small id="resBusReading" class="phonetic-reading" style="display:none;"></small>
                                         </div>
                                     </div>
                                 </div>
@@ -506,6 +565,7 @@
                                             </div>
                                             <p id="resRead" class="fw-bold mb-0 text-dark"
                                                 style="font-size: 1.1rem; line-height: 1.6; padding: 10px;"></p>
+                                            <small id="resReadReading" class="phonetic-reading px-2" style="display:none;"></small>
                                         </div>
                                     </div>
                                 </div>
@@ -610,6 +670,7 @@
                                 <span class="spinner-border spinner-border-sm loading-spinner"></span> <span
                                     id="ui-btn-docs">ร่างเอกสารภาษาญี่ปุ่น</span>
                             </button>
+                            <div id="statusMsg_docs" class="ai-status-msg"></div>
                             <div id="resDocsArea" class="mt-4" style="display:none;">
                                 <div class="result-box bg-white shadow-sm p-4">
                                     <div
@@ -644,7 +705,7 @@
                         <!-- 3. Glossary Tab -->
                         <div class="tab-pane fade" id="glossary">
                             <h4 class="mb-3" id="ui-glos-title"><i class='bi bi-book text-primary'></i> คลังศัพท์เทคนิค
-                                (Timber & Business)</h4>
+                                (Business &amp; Office)</h4>
                             <div class="d-flex flex-column flex-sm-row gap-2 mb-3">
                                 <input type="text" class="form-control p-3 border-0 bg-white shadow-sm flex-grow-1"
                                     id="termInput" placeholder="Search Timber Terms..." style="border-radius: 12px;">
@@ -656,11 +717,12 @@
                                     <span id="ui-btn-glos">ค้นหา</span>
                                 </button>
                             </div>
+                            <div id="statusMsg_glossary" class="ai-status-msg"></div>
                             <div id="resGlossary" class="mt-3" style="display:none;">
                                 <div class="result-box">
                                     <h5 id="glossTermJP" class="text-primary mb-0"></h5>
-                                    <p id="glossReading" class="text-muted small italic mb-2"></p>
-                                    <p id="glossDef"></p>
+                                    <small id="glossReading" class="phonetic-reading"></small>
+                                    <p id="glossDef" class="mt-2"></p>
                                     <hr>
                                     <small class="text-muted" id="ui-glos-ex">ตัวอย่างการใช้:</small>
                                     <p id="glossExJP" class="mb-1 fw-bold"></p>
@@ -693,6 +755,7 @@
                                 <span class="spinner-border spinner-border-sm loading-spinner"></span> <span
                                     id="ui-btn-polite">วิเคราะห์ความสุภาพ</span>
                             </button>
+                            <div id="statusMsg_polite" class="ai-status-msg"></div>
 
                             <div id="resPolite" class="mt-4" style="display:none;">
                                 <div class="result-box mb-3 border-warning">
@@ -704,7 +767,10 @@
                                     <h6 class="text-success"><i class='bi bi-check-circle'></i> <span
                                             id="ui-polite-res-suggest">ประโยคที่แนะนำ:</span></h6>
                                     <div class="d-flex justify-content-between align-items-center">
-                                        <p id="politeSuggest" class="fw-bold fs-5 mb-0 text-primary"></p>
+                                        <div>
+                                            <p id="politeSuggest" class="fw-bold fs-5 mb-0 text-primary"></p>
+                                            <small id="politeSuggestReading" class="phonetic-reading" style="display:none;"></small>
+                                        </div>
                                         <button class="btn btn-sm btn-outline-primary"
                                             onclick="copyText('politeSuggest')"><i class='bi bi-clipboard'></i> <span
                                                 id="ui-btn-copy-polite">คัดลอก</span></button>
@@ -727,7 +793,7 @@
         <div class="modal fade" id="verifyModal" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog modal-lg modal-dialog-centered">
                 <div class="modal-content border-0 shadow-lg" style="border-radius: 20px;">
-                    <div class="modal-header bg-gradient text-white" style="border-radius: 20px 20px 0 0;">
+                    <div class="modal-header text-white" style="background: var(--gradient); border-radius: 20px 20px 0 0;">
                         <h5 class="modal-title"><i class='bi bi-search'></i> <span
                                 id="ui-modal-verify-title">ตรวจสอบเนื้อหา (ภาษาไทย)</span></h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
@@ -891,7 +957,7 @@
                     subtitle: "日本企業とのオフィスAIアシスタント",
                     tab_trans: "スマート翻訳",
                     tab_docs: "書類・メール作成",
-                    tab_glos: "木材用語集",
+                    tab_glos: "オフィス用語集",
                     tab_polite: "敬語チェック",
                     trans_ph: "翻訳したいテキストを入力してください...",
                     trans_title: '<i class="bi bi-lightbulb-fill text-warning"></i> タイ語または日本語を入力してください（言語を自動検出）',
@@ -984,15 +1050,15 @@
                     docs_sender_ph: "例：ソムチャイ または 営業部",
                     docs_rec_name: "<i class='bi bi-person-badge-fill'></i> 宛名（相手の名前）",
                     docs_rec_name_ph: "例：高橋様 または お客様",
-                    glos_title: "<i class='bi bi-book text-primary'></i> 専門用語集",
+                    glos_title: "<i class='bi bi-book text-primary'></i> オフィス・ビジネス用語集",
                     glos_ph: "単語を入力（タイ語・日本語）...",
                     glos_btn: "検索",
                     glos_ex: "使用例:",
                     btn_copy: "コピー",
                     btn_save_pdf: "PDF保存",
                     btn_send_email: "メール送信",
-                    btn_verify: "内容を確認 (タイ語)",
-                    verify_title: "内容の確認 (タイ語):",
+                    btn_verify: "内容を日本語で確認",
+                    verify_title: "検証結果（日本語訳）:",
                     modal_copy: "翻訳をコピー",
                     modal_close: "閉じる",
                     res_docs_title: "作成結果",
@@ -1276,7 +1342,9 @@
                 setUI('ui-btn-copy-docs', t.btn_copy);
                 setUI('ui-btn-save-pdf', t.btn_save_pdf);
                 setUI('ui-btn-verify-docs', t.btn_verify);
-                setUI('ui-verify-title', t.verify_title);
+                setUI('ui-modal-verify-title', t.verify_title);
+                setUI('ui-modal-copy', t.modal_copy);
+                setUI('ui-modal-close', t.modal_close);
                 setUI('ui-btn-send-email', t.btn_send_email);
                 setUI('ui-res-docs-title', t.res_docs_title);
 
@@ -1334,6 +1402,33 @@
                 setUI('ui-res-read-title', t.res_read_title);
             }
 
+            // --- AI Status Message Helper (additive only) ---
+            const STATUS_MSGS = {
+                th: {
+                    translate: '🤖 AI กำลังแปลภาษา...',
+                    translate_draft: '🤖 AI กำลังสร้าง 3 ระดับ...',
+                    docs: '✍️ AI กำลังร่างเอกสาร...',
+                    docs_file: '📂 กำลังอ่านไฟล์ → ✍️ AI กำลังร่างเอกสาร...',
+                    glossary: '🔍 กำลังค้นหาคำศัพท์...',
+                    polite: '📝 AI กำลังวิเคราะห์ความสุภาพ...'
+                },
+                jp: {
+                    translate: '🤖 AIが翻訳中...',
+                    translate_draft: '🤖 AIが3パターンを作成中...',
+                    docs: '✍️ AIが書類を作成中...',
+                    docs_file: '📂 ファイル読み込み中 → ✍️ AIが書類を作成中...',
+                    glossary: '🔍 用語を検索中...',
+                    polite: '📝 AIが敬語を分析中...'
+                }
+            };
+
+            function setStatus(mode, msg) {
+                const el = document.getElementById('statusMsg_' + mode);
+                if (!el) return;
+                if (msg) { el.textContent = msg; el.style.display = 'block'; }
+                else { el.style.display = 'none'; el.textContent = ''; }
+            }
+
             async function runAction(endpoint, mode) {
                 const btns = {
                     'translate': document.getElementById('btnTranslate'),
@@ -1352,8 +1447,6 @@
                     if (el) el.innerText = '';
                 });
 
-                const resVerifyArea = document.getElementById('resDocsVerifyArea');
-                if (resVerifyArea) resVerifyArea.style.display = 'none';
                 document.getElementById('resTranslate').style.display = 'none';
                 document.getElementById('resDocsArea').style.display = 'none';
                 document.getElementById('resGlossary').style.display = 'none';
@@ -1424,6 +1517,18 @@
                         headers = { 'Content-Type': 'application/json' };
                     }
 
+                    // --- Set status before fetch ---
+                    const S = STATUS_MSGS[currentLang];
+                    if (mode === 'translate') {
+                        const isDraft = document.querySelector('input[name="transModeOpt"]:checked')?.value === 'draft';
+                        setStatus('translate', isDraft ? S.translate_draft : S.translate);
+                    } else if (mode === 'docs') {
+                        const hasFile = !!document.getElementById('docFile')?.files[0];
+                        setStatus('docs', hasFile ? S.docs_file : S.docs);
+                    } else {
+                        setStatus(mode, S[mode]);
+                    }
+
                     const response = await fetch(endpoint, { method, headers, body: payload });
                     let data;
                     if (response.ok) {
@@ -1452,6 +1557,7 @@
                     }
                     alert(translations[currentLang].err_prefix + err.message);
                 } finally {
+                    setStatus(mode, null); // Always clear status
                     if (!btn.hasAttribute('data-cooldown')) {
                         btn.disabled = false;
                         if (spinner) spinner.style.display = 'none';
@@ -1480,6 +1586,27 @@
                 updateBtn();
             }
 
+            function downloadPDF() {
+                const rawText = document.getElementById('resDocs').innerText;
+                if (!rawText || !rawText.trim()) return;
+
+                // Clean markdown formatting
+                const cleanText = rawText.replace(/\*\*|__/g, '').trim();
+
+                // Create or reuse an in-page print area (no popup, works on ALL devices)
+                let printArea = document.getElementById('pdf-print-area');
+                if (!printArea) {
+                    printArea = document.createElement('div');
+                    printArea.id = 'pdf-print-area';
+                    document.body.appendChild(printArea);
+                }
+                printArea.textContent = cleanText;
+
+                // Trigger the browser's native print dialog
+                // Desktop: choose "Save as PDF"  |  Mobile: Share → Print
+                window.print();
+            }
+
             function displayResult(mode, data) {
                 if (mode === 'translate') {
                     document.getElementById('resTranslate').style.display = 'block';
@@ -1488,12 +1615,29 @@
                         document.getElementById('resTranslateDraft').style.display = 'none';
                         document.getElementById('resTranslateRead').style.display = 'block';
                         document.getElementById('resRead').innerText = data.business || data.result || "-";
+                        // Phonetic reading for Read mode
+                        const readR = document.getElementById('resReadReading');
+                        const readingVal = data.business_reading || '';
+                        if (readR && readingVal && readingVal !== '-') {
+                            readR.textContent = readingVal;
+                            readR.style.display = 'block';
+                        } else if (readR) { readR.style.display = 'none'; }
                     } else {
-                        document.getElementById('resTranslateDraft').style.display = 'flex';
+                        document.getElementById('resTranslateDraft').style.display = ''; // Let Bootstrap .row flex take over
                         document.getElementById('resTranslateRead').style.display = 'none';
                         document.getElementById('resCas').innerText = data.casual || "-";
                         document.getElementById('resPol').innerText = data.polite || "-";
                         document.getElementById('resBus').innerText = data.business || "-";
+                        // Phonetic readings for Draft mode
+                        const setReading = (elId, val) => {
+                            const el = document.getElementById(elId);
+                            if (!el) return;
+                            if (val && val !== '-') { el.textContent = val; el.style.display = 'block'; }
+                            else { el.style.display = 'none'; }
+                        };
+                        setReading('resCasReading', data.casual_reading);
+                        setReading('resPolReading', data.polite_reading);
+                        setReading('resBusReading', data.business_reading);
                     }
                 } else if (mode === 'docs') {
                     document.getElementById('resDocs').innerText = data.result;
@@ -1508,17 +1652,52 @@
                     const pdfBtn = document.getElementById('btnSavePDF');
 
                     if (emailBtn) emailBtn.style.display = isEmail ? 'inline-block' : 'none';
-                    if (pdfBtn) pdfBtn.style.display = (docCat === 'reports' || docCat === 'admin') ? 'inline-block' : 'none';
+                    if (pdfBtn) pdfBtn.style.display = isEmail ? 'none' : 'inline-block';
                 } else if (mode === 'glossary') {
                     document.getElementById('glossTermJP').innerHTML = `${data.term_main} <span class="mx-2 text-muted">↔</span> ${data.term_target}`;
-                    document.getElementById('glossReading').innerText = data.reading || "";
+                    // Phonetic reading under term (strip stray brackets)
+                    const glossR = document.getElementById('glossReading');
+                    const readVal = (data.reading || '').replace(/[\[\]]/g, '').trim();
+                    if (glossR) { glossR.textContent = readVal; glossR.style.display = readVal ? 'block' : 'none'; }
                     document.getElementById('glossDef').innerText = data.definition;
-                    document.getElementById('glossExJP').innerText = data.example_jp;
-                    document.getElementById('glossExTH').innerText = data.example_th;
+                    // Example sentence + separate reading subtitle
+                    const exJP = document.getElementById('glossExJP');
+                    exJP.innerText = data.example_jp || '';
+                    const exTH = document.getElementById('glossExTH');
+                    exTH.innerText = data.example_th || '';
+
+                    if (data.example_jp_reading && data.example_jp_reading !== '-') {
+                        let exReading = document.getElementById('glossExJPReading');
+                        if (!exReading) {
+                            exReading = document.createElement('small');
+                            exReading.id = 'glossExJPReading';
+                            exReading.className = 'phonetic-reading';
+                        }
+                        exReading.textContent = data.example_jp_reading;
+                        exReading.style.display = 'block';
+                        
+                        // Place reading under the correct target sentence based on user's native language
+                        if (currentLang === 'jp') {
+                            exTH.insertAdjacentElement('afterend', exReading);
+                        } else {
+                            exJP.insertAdjacentElement('afterend', exReading);
+                        }
+                    } else {
+                        const exReading = document.getElementById('glossExJPReading');
+                        if (exReading) exReading.style.display = 'none';
+                    }
                     document.getElementById('resGlossary').style.display = 'block';
+
                 } else if (mode === 'polite') {
                     document.getElementById('politeAnalysis').innerText = data.analysis;
                     document.getElementById('politeSuggest').innerText = data.suggestion;
+                    // Phonetic reading under suggestion
+                    const sugR = document.getElementById('politeSuggestReading');
+                    if (sugR) {
+                        const rVal = data.suggestion_reading || '';
+                        if (rVal && rVal !== '-') { sugR.textContent = rVal; sugR.style.display = 'block'; }
+                        else { sugR.style.display = 'none'; }
+                    }
                     document.getElementById('politeExplain').innerText = data.explanation;
                     document.getElementById('resPolite').style.display = 'block';
                 }
@@ -1606,41 +1785,6 @@
 
 
 
-            function downloadPDF() {
-                const contentText = document.getElementById('resDocs').innerText;
-                const type = document.getElementById('docType').value;
-                const docDateEl = document.getElementById('docDate');
-                const date = (docDateEl && docDateEl.value) ? docDateEl.value : new Date().toISOString().split('T')[0];
-                
-                // Show loading toast
-                showToast(currentLang === 'th' ? '<i class="bi bi-hourglass-split"></i> กำลังสร้างไฟล์ PDF...' : '<i class="bi bi-hourglass-split"></i> PDF作成中...');
-
-                const printContainer = document.createElement('div');
-                printContainer.style.padding = '40px';
-                printContainer.style.fontFamily = "'Sarabun', 'Inter', sans-serif";
-                printContainer.style.color = '#333';
-                printContainer.style.fontSize = '12pt';
-                printContainer.style.lineHeight = '1.7';
-                printContainer.style.whiteSpace = 'pre-wrap';
-                printContainer.innerHTML = contentText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>'); // Basic markdown bold support
-                
-                const opt = {
-                    margin:       [0.75, 0.75, 0.75, 0.75],
-                    filename:     `OfficeBuddy_${type}_${date}.pdf`,
-                    image:        { type: 'jpeg', quality: 1 },
-                    html2canvas:  { scale: 3, useCORS: true, letterRendering: true },
-                    jsPDF:        { unit: 'in', format: 'a4', orientation: 'portrait' }
-                };
-                
-                html2pdf().set(opt).from(printContainer).save().then(() => {
-                    showToast(currentLang === 'th' ? 'ดาวน์โหลดเอกสาร PDF สำเร็จ!' : 'PDFを保存しました！');
-                }).catch(err => {
-                    console.error('PDF Error:', err);
-                    showToast('PDF Error', 'x-circle-fill');
-                });
-            }
-
-
 
             function sendEmail() {
                 const text = document.getElementById('resDocs').innerText;
@@ -1688,7 +1832,9 @@
                     document.getElementById('resDocsThai').innerText = text;
                 } catch (err) {
                     console.error('Verify Error:', err);
-                    document.getElementById('resDocsThai').innerText = "💡 ปัญหาชั่วคราว: " + err.message + "\n(กรุณาลองกดปุ่มตรวจสอบอีกครั้งครับ)";
+                    const errMsgTh = "💡 ปัญหาชั่วคราว: " + err.message + "\n(กรุณาลองกดปุ่มตรวจสอบอีกครั้งครับ)";
+                    const errMsgJp = "💡 一時的な問題: " + err.message + "\n(もう一度確認ボタンを押してください)";
+                    document.getElementById('resDocsThai').innerText = currentLang === 'th' ? errMsgTh : errMsgJp;
                 }
 
             }
