@@ -101,7 +101,7 @@ def call_gemini_api(prompt, require_json=False, ui_lang='th'):
                     "safetySettings": safety_settings
                 }
                 
-                response = requests.post(url, headers={'Content-Type': 'application/json'}, json=payload, timeout=60)
+                response = requests.post(url, headers={'Content-Type': 'application/json'}, json=payload, timeout=30)
                 res_json = response.json()
                 
                 if response.status_code == 200:
@@ -125,10 +125,9 @@ def call_gemini_api(prompt, require_json=False, ui_lang='th'):
                     continue
                 
                 elif response.status_code == 429:
-                    msg = res_json.get('error', {}).get('message', '')
-                    if "quota" in msg.lower() and len(current_keys) > 1:
-                        continue 
-                    return {"error": "อัปเดต: ⚠️ โควต้า AI เต็มชั่วคราวครับ กรุณาลองใหม่ภายหลัง" if ui_lang == 'th' else "⚠️ AIの無料枠（クォータ）が上限に達しました。後でもう一度お試しください。"}
+                    # Always try next key on any 429 rate limit, regardless of message content
+                    last_error_data = {"error": "⚠️ โควต้า AI เต็มชั่วคราวครับ กำลังลองเปลี่ยน Key สำรอง..." if ui_lang == 'th' else "⚠️ AIクォータ上限のため、予備キーに切り替えます..."}
+                    continue
                 
                 elif response.status_code == 503:
                     last_error_data = {"error": "503 Server Error: เซิร์ฟเวอร์ AI ล่มหรือมีคนใช้งานเยอะเกินไป (High Demand) กรุณาลองกดใหม่อีกครั้งครับ" if ui_lang == 'th' else "503 エラー: AIサーバーが混み合っています（High Demand）。もう一度お試しください。"}
